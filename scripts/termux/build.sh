@@ -9,7 +9,7 @@ if [ ! -f package.json ] || [ ! -d server/node ]; then
 fi
 
 echo "[1/5] Installing Termux packages..."
-pkg install -y nodejs-lts python make clang pkg-config tar curl
+pkg install -y nodejs-lts python make clang pkg-config tar curl cloudflared
 
 echo "[2/5] Enabling pnpm via corepack..."
 corepack enable
