@@ -104,7 +104,7 @@ Keep the PocketRisu server running and use the existing UI to start and stop a C
 3. Once started, open the displayed `https://…trycloudflare.com` URL from another PC, tablet, or phone, or scan its QR code.
 4. To stop sharing, select **Close Remote Access** on the same screen.
 
-The build script installs Termux's packaged `cloudflared`. For an existing installation, run `pkg install -y cloudflared` once if it is missing, then restart the PocketRisu server. The backend uses `$PREFIX/bin/cloudflared`, never an old Linux binary in the project's `bin/` folder. If the package is missing, it displays an installation error instead of downloading a Linux binary.
+The build script installs Termux's packaged `cloudflared`. For an existing installation, run `pkg install -y cloudflared` if it is missing, then retry the Remote Access button. A server restart is not required. The backend uses `$PREFIX/bin/cloudflared`, never an old Linux binary in the project's `bin/` folder. If the package is missing, it displays an installation error instead of downloading a Linux binary.
 
 > Quick Tunnel provides a temporary public HTTPS URL. Anyone with that address can attempt to connect; do not share the URL or authentication credentials publicly. A new URL may be issued when the server or tunnel restarts.
 
@@ -145,13 +145,16 @@ Each step runs only if the previous one succeeded, so the command stops at the f
 
 ### If `git pull` fails
 
-If `git pull` stops with `Your local changes to the following files would be overwritten by merge` or `Not possible to fast-forward`, reset the source to the latest version with the following command, then run the update command above again:
+Local changes or a divergence between your current branch and its upstream may prevent a fast-forward. Inspect the state first:
 
 ```bash
-cd ~/PocketRisu-Exp && git fetch origin && git reset --hard origin/main
+cd ~/PocketRisu-Exp
+git status
+git branch -vv
+git fetch origin
 ```
 
-The `save/` and `backups/` folders are not tracked by git, so chats, characters, and settings stay as they are. Any edits you made to source files (a changed port, dependencies changed with `pnpm add`, and so on) are discarded.
+These commands do not overwrite local files. **Do not run `git reset --hard origin/main` on your development branch**: it can discard fork-specific changes. Review the current branch and your edits before choosing a merge, rebase, or a commit/backup.
 
 
 ---
