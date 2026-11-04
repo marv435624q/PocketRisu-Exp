@@ -4,14 +4,15 @@
 
 # Termux 설치 가이드
 
-안드로이드 폰에서 Termux를 통해 PocketRisu를 직접 빌드해 사용하는 방법을 안내합니다. 같은 폰의 브라우저에서 `http://localhost:6001`로 접속하는 사용 패턴이 기본입니다.
+안드로이드 폰에서 Termux를 통해 PocketRisu를 직접 빌드해 사용하는 방법을 안내합니다. 같은 폰의 브라우저에서 `http://localhost:6001`로 접속하거나, Quick Tunnel을 열어 다른 네트워크의 기기에서도 접속할 수 있습니다.
 
 - [1. 사전 준비](#1-사전-준비) — Termux + 시스템 요구사항
 - [2. 설치 및 빌드](#2-설치-및-빌드) — 한 줄 명령으로 자동 진행
 - [3. 실행 및 접속](#3-실행-및-접속) — 폰 브라우저로 사용
-- [4. 백그라운드 유지](#4-백그라운드-유지) — 화면 꺼진 상태에서도 서버 유지
-- [5. 업데이트](#5-업데이트) — 최신 버전 받기
-- [6. 제한사항](#6-제한사항) — Termux 환경에서 동작하지 않는 기능
+- [4. Quick Tunnel 원격 접속](#4-quick-tunnel-원격-접속) — 기존 UI에서 열기·닫기
+- [5. 백그라운드 유지](#5-백그라운드-유지) — 화면 꺼진 상태에서도 서버 유지
+- [6. 업데이트](#6-업데이트) — 최신 버전 받기
+- [7. 제한사항](#7-제한사항) — 사용 시 주의할 점
 
 
 ## 시스템 요구사항
@@ -47,16 +48,16 @@ Termux 앱을 연 후 다음 한 줄을 실행합니다.
 
 ```bash
 pkg install -y git && \
-  git clone https://github.com/PocketRisu/PocketRisu.git && \
-  cd PocketRisu && \
+  git clone https://github.com/marv435624q/PocketRisu-Exp.git && \
+  cd PocketRisu-Exp && \
   bash scripts/termux/build.sh
 ```
 
 이 명령이 자동으로 처리합니다.
 
 1. `git` 설치
-2. PocketRisu 소스 다운로드
-3. 빌드 의존성 설치 (`nodejs-lts`, `python`, `make`, `clang`, `pnpm` 등)
+2. PocketRisu-Exp 소스 다운로드 (비공개 저장소이므로 GitHub 인증 필요)
+3. 빌드 의존성 및 `cloudflared` 설치 (`nodejs-lts`, `python`, `make`, `clang`, `pnpm` 등)
 4. `pnpm install` — JavaScript 의존성 다운로드 및 네이티브 모듈 컴파일
 5. `pnpm build` — 프론트엔드 번들링
 
@@ -94,7 +95,22 @@ PocketRisu UI가 표시되면 정상입니다. `localhost`는 브라우저가 �
 
 ---
 
-## 4. 백그라운드 유지
+## 4. Quick Tunnel 원격 접속
+
+서버가 실행 중인 상태에서 PocketRisu의 기존 버튼으로 Cloudflare Quick Tunnel을 열고 닫을 수 있습니다. **별도의 Termux 세션에서 `cloudflared tunnel` 명령을 직접 실행할 필요는 없습니다.**
+
+1. 폰의 브라우저에서 `http://localhost:6001`을 엽니다.
+2. **설정 → 원격 접속 → 원격 접속 열기**를 누릅니다.
+3. 시작이 완료되면 표시되는 `https://…trycloudflare.com` 주소를 다른 PC·태블릿·폰의 브라우저에 입력하거나 QR 코드를 스캔합니다.
+4. 공유를 종료할 때는 같은 화면에서 **원격 접속 닫기**를 누릅니다.
+
+빌드 스크립트는 Termux 패키지 `cloudflared`를 설치합니다. 기존 설치에서 패키지가 없다면 Termux에서 한 번 `pkg install -y cloudflared`를 실행하고, **PocketRisu 서버를 재시작**하셔도 됩니다. 서버는 `$PREFIX/bin/cloudflared`를 사용하며 프로젝트의 `bin/cloudflared`에 남은 Linux 바이너리는 실행하지 않습니다. 패키지를 찾지 못하면 설치 안내 오류를 표시하고 자동 다운로드하지 않습니다.
+
+> Quick Tunnel 주소는 임시 공개 HTTPS 주소입니다. 주소를 아는 사람은 서버에 접속을 시도할 수 있으므로 주소 및 인증 정보를 외부에 공개하지 마세요. 서버를 재시작하거나 터널을 다시 열면 주소가 변경될 수 있습니다.
+
+---
+
+## 5. 백그라운드 유지
 
 화면이 꺼지거나 다른 앱을 사용하는 동안에도 서버를 유지하려면 슬립 방지를 활성화합니다.
 
@@ -111,12 +127,12 @@ Termux 알림 영역에 wake lock 상태가 표시되며, 폰 화면이 꺼져�
 
 ---
 
-## 5. 업데이트
+## 6. 업데이트
 
 실행 중인 서버를 `Ctrl + C`로 종료한 뒤 다음을 실행합니다.
 
 ```bash
-cd ~/PocketRisu && \
+cd ~/PocketRisu-Exp && \
   git pull --ff-only && \
   GYP_DEFINES="android_ndk_path=''" pnpm install --frozen-lockfile && \
   NODE_OPTIONS="--max-old-space-size=2048" pnpm build
@@ -132,7 +148,7 @@ cd ~/PocketRisu && \
 `git pull`이 `Your local changes to the following files would be overwritten by merge` 또는 `Not possible to fast-forward` 오류로 멈췄다면, 다음 명령으로 소스를 최신 버전에 맞춘 뒤 위 업데이트 명령을 다시 실행합니다.
 
 ```bash
-cd ~/PocketRisu && git fetch origin && git reset --hard origin/main
+cd ~/PocketRisu-Exp && git fetch origin && git reset --hard origin/main
 ```
 
 `save/`, `backups/` 폴더는 git이 관리하지 않으므로 채팅, 캐릭터, 설정 데이터는 그대로 남습니다. 대신 소스 파일을 직접 고친 내용(포트 변경, `pnpm add`로 바꾼 의존성 등)은 사라집니다.
@@ -140,11 +156,9 @@ cd ~/PocketRisu && git fetch origin && git reset --hard origin/main
 
 ---
 
-## 6. 제한사항
+## 7. 제한사항
 
-설정 → 원격 접속 메뉴의 **Quick Tunnel은 Termux에서 사용할 수 없습니다**. cloudflared 바이너리가 Termux의 DNS·TLS 환경과 호환되지 않습니다.
-
-PocketRisu UI는 Termux 환경을 자동 감지하여 해당 메뉴에 경고를 표시하고 버튼을 숨깁니다.
+Quick Tunnel은 Termux 패키지의 `cloudflared`가 필요하며, Android의 백그라운드 제한·네트워크 상태에 따라 연결이 끊길 수 있습니다. 수동으로 실행한 `cloudflared`의 동작 확인과 별개로, PocketRisu UI를 통한 전체 흐름은 실제 기기에서 검증해야 합니다.
 
 
 ---
