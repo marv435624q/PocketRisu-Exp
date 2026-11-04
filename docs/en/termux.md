@@ -4,14 +4,15 @@
 
 # Termux Installation Guide
 
-This guide explains how to build and run PocketRisu directly on an Android phone using Termux. The intended use pattern is to open `http://localhost:6001` in the phone's own browser.
+This guide explains how to build and run PocketRisu directly on an Android phone using Termux. Open `http://localhost:6001` on the phone or use Quick Tunnel to connect from devices on other networks.
 
 - [1. Prerequisites](#1-prerequisites) — Termux and system requirements
 - [2. Install and Build](#2-install-and-build) — single-command setup
 - [3. Run and Connect](#3-run-and-connect) — open from the phone's browser
-- [4. Keep It Running](#4-keep-it-running) — survive screen-off
-- [5. Update](#5-update) — pull the latest version
-- [6. Limitations](#6-limitations) — features that do not work on Termux
+- [4. Quick Tunnel Remote Access](#4-quick-tunnel-remote-access) — open and close from the existing UI
+- [5. Keep It Running](#5-keep-it-running) — survive screen-off
+- [6. Update](#6-update) — pull the latest version
+- [7. Limitations](#7-limitations) — considerations for Termux
 
 
 ## System Requirements
@@ -47,16 +48,16 @@ Open Termux and run this single command:
 
 ```bash
 pkg install -y git && \
-  git clone https://github.com/PocketRisu/PocketRisu.git && \
-  cd PocketRisu && \
+  git clone https://github.com/marv435624q/PocketRisu-Exp.git && \
+  cd PocketRisu-Exp && \
   bash scripts/termux/build.sh
 ```
 
 The command takes care of:
 
 1. Installing `git`
-2. Cloning the PocketRisu repository
-3. Installing build dependencies (`nodejs-lts`, `python`, `make`, `clang`, `pnpm`, etc.)
+2. Cloning the private PocketRisu-Exp repository (GitHub authentication required)
+3. Installing build dependencies and `cloudflared` (`nodejs-lts`, `python`, `make`, `clang`, `pnpm`, etc.)
 4. `pnpm install` — JavaScript dependencies and native module compilation
 5. `pnpm build` — frontend bundling
 
@@ -94,7 +95,22 @@ Stop the server with `Ctrl + C`.
 
 ---
 
-## 4. Keep It Running
+## 4. Quick Tunnel Remote Access
+
+Keep the PocketRisu server running and use the existing UI to start and stop a Cloudflare Quick Tunnel. **Do not launch a separate `cloudflared tunnel` session manually.**
+
+1. Open `http://localhost:6001` in the phone's browser.
+2. Select **Settings → Remote Access → Open Remote Access**.
+3. Once started, open the displayed `https://…trycloudflare.com` URL from another PC, tablet, or phone, or scan its QR code.
+4. To stop sharing, select **Close Remote Access** on the same screen.
+
+The build script installs Termux's packaged `cloudflared`. For an existing installation, run `pkg install -y cloudflared` once if it is missing, then restart the PocketRisu server. The backend uses `$PREFIX/bin/cloudflared`, never an old Linux binary in the project's `bin/` folder. If the package is missing, it displays an installation error instead of downloading a Linux binary.
+
+> Quick Tunnel provides a temporary public HTTPS URL. Anyone with that address can attempt to connect; do not share the URL or authentication credentials publicly. A new URL may be issued when the server or tunnel restarts.
+
+---
+
+## 5. Keep It Running
 
 To keep the server alive when the screen turns off or you switch to other apps, enable Termux's wake lock:
 
@@ -111,12 +127,12 @@ Release with: `termux-wake-unlock`
 
 ---
 
-## 5. Update
+## 6. Update
 
 Stop the running server with `Ctrl + C`, then run:
 
 ```bash
-cd ~/PocketRisu && \
+cd ~/PocketRisu-Exp && \
   git pull --ff-only && \
   GYP_DEFINES="android_ndk_path=''" pnpm install --frozen-lockfile && \
   NODE_OPTIONS="--max-old-space-size=2048" pnpm build
@@ -132,7 +148,7 @@ Each step runs only if the previous one succeeded, so the command stops at the f
 If `git pull` stops with `Your local changes to the following files would be overwritten by merge` or `Not possible to fast-forward`, reset the source to the latest version with the following command, then run the update command above again:
 
 ```bash
-cd ~/PocketRisu && git fetch origin && git reset --hard origin/main
+cd ~/PocketRisu-Exp && git fetch origin && git reset --hard origin/main
 ```
 
 The `save/` and `backups/` folders are not tracked by git, so chats, characters, and settings stay as they are. Any edits you made to source files (a changed port, dependencies changed with `pnpm add`, and so on) are discarded.
@@ -140,11 +156,9 @@ The `save/` and `backups/` folders are not tracked by git, so chats, characters,
 
 ---
 
-## 6. Limitations
+## 7. Limitations
 
-**Quick Tunnel (Cloudflare auto tunnel) does not work on Termux.** The `cloudflared` binary is incompatible with Termux's DNS and TLS environment.
-
-PocketRisu detects the Termux environment automatically and shows a warning in the Remote Access menu, hiding the start button.
+Quick Tunnel requires the Termux `cloudflared` package. Android background restrictions and changing networks may interrupt an active connection. The standalone Termux package was tested separately; the full PocketRisu UI flow still needs device verification.
 
 
 ---
