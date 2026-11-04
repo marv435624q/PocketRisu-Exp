@@ -49,8 +49,8 @@ Abra Termux y ejecute este único comando:
 
 ```bash
 pkg install -y git && \
-  git clone https://github.com/PocketRisu/PocketRisu.git && \
-  cd PocketRisu && \
+  git clone https://github.com/marv435624q/PocketRisu-Exp.git && \
+  cd PocketRisu-Exp && \
   bash scripts/termux/build.sh
 ```
 
@@ -118,7 +118,7 @@ Libere con: `termux-wake-unlock`
 Detenga el servidor en ejecución con `Ctrl + C` y luego ejecute:
 
 ```bash
-cd ~/PocketRisu && \
+cd ~/PocketRisu-Exp && \
   git pull --ff-only && \
   GYP_DEFINES="android_ndk_path=''" pnpm install --frozen-lockfile && \
   NODE_OPTIONS="--max-old-space-size=2048" pnpm build
@@ -134,7 +134,7 @@ Cada paso solo se ejecuta si el anterior tuvo éxito, así que el comando se det
 Si `git pull` se detiene con `Your local changes to the following files would be overwritten by merge` o `Not possible to fast-forward`, restablezca el código fuente a la última versión con el siguiente comando y vuelva a ejecutar el comando de actualización anterior:
 
 ```bash
-cd ~/PocketRisu && git fetch origin && git reset --hard origin/main
+cd ~/PocketRisu-Exp && git fetch origin && git reset --hard origin/main
 ```
 
 Las carpetas `save/` y `backups/` no están controladas por git, por lo que los chats, personajes y ajustes se conservan. Se descartan los cambios que haya hecho en los archivos fuente (un puerto modificado, dependencias cambiadas con `pnpm add`, etc.).
@@ -144,9 +144,9 @@ Las carpetas `save/` y `backups/` no están controladas por git, por lo que los 
 
 ## 6. Limitaciones
 
-**Quick Tunnel (túnel automático de Cloudflare) no funciona en Termux.** El binario `cloudflared` no es compatible con el entorno DNS y TLS de Termux.
+En PocketRisu-Exp, Quick Tunnel se inicia desde **Ajustes → Acceso remoto → Abrir acceso remoto** y se detiene con el botón de cierre. El script de compilación instala el paquete `cloudflared` de Termux; en instalaciones existentes se puede ejecutar `pkg install -y cloudflared`. No es necesario abrir otra sesión de terminal para ejecutar el túnel manualmente.
 
-PocketRisu detecta automáticamente el entorno Termux y muestra una advertencia en el menú de Acceso Remoto, ocultando el botón de inicio.
+El paquete de Termux se verificó por separado; el flujo completo mediante la interfaz de PocketRisu aún requiere pruebas en un dispositivo Android. Consulte la [guía en inglés](../en/termux.md).
 
 
 ---
