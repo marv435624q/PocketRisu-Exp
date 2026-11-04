@@ -46,6 +46,22 @@ PocketRisu는 PC나 개인 서버에 띄워두고, PC·태블릿·스마트폰 �
 - [캐릭터 비활성화 가이드](../docs/ko/deactivate-characters.md)
 
 
+## Android (Termux)에서 Quick Tunnel 사용 — PocketRisu-Exp
+
+폰 자체를 PocketRisu 서버로 사용하고, 기존 **설정 → 원격 접속** 화면에서 다른 기기의 접속을 열고 닫을 수 있도록 한 개조판입니다.
+
+```bash
+pkg install -y git
+git clone https://github.com/marv435624q/PocketRisu-Exp.git
+cd PocketRisu-Exp
+bash scripts/termux/build.sh
+node server/node/server.cjs
+```
+
+> 이 저장소는 비공개이므로 `git clone` 시 GitHub 인증이 필요합니다. 빌드 스크립트에 Termux용 `cloudflared` 설치가 포함되어 있습니다.
+
+폰 브라우저에서 `http://localhost:6001`을 열고 **설정 → 원격 접속 → 원격 접속 열기**를 누르세요. 표시된 HTTPS 주소·QR 코드로 다른 PC나 폰에서 접속한 다음, 끝낼 때 **원격 접속 닫기**를 누릅니다. `cloudflared`를 다른 Termux 세션에서 직접 실행할 필요는 없습니다. 자세한 설명은 [Termux 가이드](../docs/ko/termux.md)에 있습니다.
+
 ## RisuAI 호환
 
 PocketRisu는 [RisuAI](https://github.com/kwaroran/RisuAI)에서 파생되어, 셀프호스팅 환경에 맞게 개선한 프로젝트입니다. 기존 RisuAI의 데이터를 통째로 마이그레이션할 수 있고, RisuAI 생태계의 모든 자산을 그대로 사용할 수 있습니다.
