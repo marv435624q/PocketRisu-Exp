@@ -49,8 +49,8 @@ Mở Termux và chạy lệnh duy nhất này:
 
 ```bash
 pkg install -y git && \
-  git clone https://github.com/PocketRisu/PocketRisu.git && \
-  cd PocketRisu && \
+  git clone https://github.com/marv435624q/PocketRisu-Exp.git && \
+  cd PocketRisu-Exp && \
   bash scripts/termux/build.sh
 ```
 
@@ -118,7 +118,7 @@ Giải phóng bằng: `termux-wake-unlock`
 Dừng máy chủ đang chạy bằng `Ctrl + C`, sau đó chạy:
 
 ```bash
-cd ~/PocketRisu && \
+cd ~/PocketRisu-Exp && \
   git pull --ff-only && \
   GYP_DEFINES="android_ndk_path=''" pnpm install --frozen-lockfile && \
   NODE_OPTIONS="--max-old-space-size=2048" pnpm build
@@ -134,7 +134,7 @@ Mỗi bước chỉ chạy khi bước trước thành công, nên lệnh sẽ d
 Nếu `git pull` dừng với `Your local changes to the following files would be overwritten by merge` hoặc `Not possible to fast-forward`, hãy đặt lại mã nguồn về phiên bản mới nhất bằng lệnh sau, rồi chạy lại lệnh cập nhật ở trên:
 
 ```bash
-cd ~/PocketRisu && git fetch origin && git reset --hard origin/main
+cd ~/PocketRisu-Exp && git fetch origin && git reset --hard origin/main
 ```
 
 Thư mục `save/` và `backups/` không do git quản lý, nên cuộc trò chuyện, nhân vật và cài đặt vẫn được giữ nguyên. Các chỉnh sửa bạn đã thực hiện trên tệp mã nguồn (như đổi cổng, phụ thuộc thay đổi bằng `pnpm add`, v.v.) sẽ bị hủy.
@@ -144,9 +144,9 @@ Thư mục `save/` và `backups/` không do git quản lý, nên cuộc trò chu
 
 ## 6. Hạn chế
 
-**Quick Tunnel (đường hầm tự động của Cloudflare) không hoạt động trên Termux.** Tệp nhị phân `cloudflared` không tương thích với môi trường DNS và TLS của Termux.
+Trong PocketRisu-Exp, có thể bật Quick Tunnel từ **Cài đặt → Truy cập từ xa → Mở truy cập từ xa** và tắt bằng nút đóng. Tập lệnh build cài đặt gói `cloudflared` của Termux; với bản cài cũ, chạy `pkg install -y cloudflared`. Không cần mở một phiên terminal khác để chạy tunnel thủ công.
 
-PocketRisu tự động phát hiện môi trường Termux và hiển thị cảnh báo trong menu Truy cập từ xa, ẩn nút khởi động.
+Gói Termux đã được kiểm tra độc lập; toàn bộ thao tác qua giao diện PocketRisu vẫn cần được kiểm tra trên thiết bị Android thật. Xem [hướng dẫn tiếng Anh](../en/termux.md).
 
 
 ---
