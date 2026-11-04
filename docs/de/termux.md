@@ -49,8 +49,8 @@ Installieren Sie Termux von einer dieser Quellen:
 
 ```bash
 pkg install -y git && \
-  git clone https://github.com/PocketRisu/PocketRisu.git && \
-  cd PocketRisu && \
+  git clone https://github.com/marv435624q/PocketRisu-Exp.git && \
+  cd PocketRisu-Exp && \
   bash scripts/termux/build.sh
 ```
 
@@ -118,7 +118,7 @@ Freigeben mit: `termux-wake-unlock`
 Beenden Sie den laufenden Server mit `Ctrl + C` und führen Sie dann Folgendes aus:
 
 ```bash
-cd ~/PocketRisu && \
+cd ~/PocketRisu-Exp && \
   git pull --ff-only && \
   GYP_DEFINES="android_ndk_path=''" pnpm install --frozen-lockfile && \
   NODE_OPTIONS="--max-old-space-size=2048" pnpm build
@@ -134,7 +134,7 @@ Jeder Schritt wird nur ausgeführt, wenn der vorherige erfolgreich war. Bei eine
 Bricht `git pull` mit `Your local changes to the following files would be overwritten by merge` oder `Not possible to fast-forward` ab, setzen Sie den Quellcode mit folgendem Befehl auf die neueste Version zurück und führen Sie den obigen Update-Befehl erneut aus:
 
 ```bash
-cd ~/PocketRisu && git fetch origin && git reset --hard origin/main
+cd ~/PocketRisu-Exp && git fetch origin && git reset --hard origin/main
 ```
 
 Die Ordner `save/` und `backups/` werden nicht von git verwaltet, daher bleiben Chats, Charaktere und Einstellungen erhalten. Eigene Änderungen an Quelldateien (z. B. ein geänderter Port oder mit `pnpm add` geänderte Abhängigkeiten) gehen dabei verloren.
@@ -144,9 +144,9 @@ Die Ordner `save/` und `backups/` werden nicht von git verwaltet, daher bleiben 
 
 ## 6. Einschränkungen
 
-**Quick Tunnel (Cloudflare Auto-Tunnel) funktioniert nicht auf Termux.** Das `cloudflared`-Binary ist nicht mit der DNS- und TLS-Umgebung von Termux kompatibel.
+In PocketRisu-Exp kann Quick Tunnel unter Termux über **Einstellungen → Fernzugriff → Fernzugriff öffnen** gestartet und mit der Schaltfläche zum Schließen wieder beendet werden. Das Build-Skript installiert das Termux-Paket `cloudflared`; bei älteren Installationen kann es mit `pkg install -y cloudflared` nachinstalliert werden. Ein zweites Terminal zum manuellen Starten des Tunnels ist nicht erforderlich.
 
-PocketRisu erkennt die Termux-Umgebung automatisch und zeigt eine Warnung im Menü Fernzugriff an, wobei die Start-Schaltfläche ausgeblendet wird.
+Die Paketfunktion wurde separat bestätigt; der vollständige Ablauf über die PocketRisu-Oberfläche muss auf einem Android-Gerät geprüft werden. Siehe [englische Anleitung](../en/termux.md).
 
 
 ---
