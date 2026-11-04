@@ -104,7 +104,7 @@ PocketRisu UI가 표시되면 정상입니다. `localhost`는 브라우저가 �
 3. 시작이 완료되면 표시되는 `https://…trycloudflare.com` 주소를 다른 PC·태블릿·폰의 브라우저에 입력하거나 QR 코드를 스캔합니다.
 4. 공유를 종료할 때는 같은 화면에서 **원격 접속 닫기**를 누릅니다.
 
-빌드 스크립트는 Termux 패키지 `cloudflared`를 설치합니다. 기존 설치에서 패키지가 없다면 Termux에서 한 번 `pkg install -y cloudflared`를 실행하고, **PocketRisu 서버를 재시작**하셔도 됩니다. 서버는 `$PREFIX/bin/cloudflared`를 사용하며 프로젝트의 `bin/cloudflared`에 남은 Linux 바이너리는 실행하지 않습니다. 패키지를 찾지 못하면 설치 안내 오류를 표시하고 자동 다운로드하지 않습니다.
+빌드 스크립트는 Termux 패키지 `cloudflared`를 설치합니다. 기존 설치에서 패키지가 없다면 Termux에서 `pkg install -y cloudflared`를 실행한 뒤 **원격 접속 버튼을 다시 누르세요. 서버 재시작은 필요하지 않습니다.** 서버는 `$PREFIX/bin/cloudflared`를 사용하며 프로젝트의 `bin/cloudflared`에 남은 Linux 바이너리는 실행하지 않습니다. 패키지를 찾지 못하면 설치 안내 오류를 표시하고 자동 다운로드하지 않습니다.
 
 > Quick Tunnel 주소는 임시 공개 HTTPS 주소입니다. 주소를 아는 사람은 서버에 접속을 시도할 수 있으므로 주소 및 인증 정보를 외부에 공개하지 마세요. 서버를 재시작하거나 터널을 다시 열면 주소가 변경될 수 있습니다.
 
@@ -145,13 +145,16 @@ cd ~/PocketRisu-Exp && \
 
 ### `git pull`이 실패하는 경우
 
-`git pull`이 `Your local changes to the following files would be overwritten by merge` 또는 `Not possible to fast-forward` 오류로 멈췄다면, 다음 명령으로 소스를 최신 버전에 맞춘 뒤 위 업데이트 명령을 다시 실행합니다.
+로컬 수정이 있거나 현재 브랜치와 원격 브랜치의 이력이 달라졌을 수 있습니다. 먼저 아래 명령으로 상태를 확인하세요.
 
 ```bash
-cd ~/PocketRisu-Exp && git fetch origin && git reset --hard origin/main
+cd ~/PocketRisu-Exp
+git status
+git branch -vv
+git fetch origin
 ```
 
-`save/`, `backups/` 폴더는 git이 관리하지 않으므로 채팅, 캐릭터, 설정 데이터는 그대로 남습니다. 대신 소스 파일을 직접 고친 내용(포트 변경, `pnpm add`로 바꾼 의존성 등)은 사라집니다.
+이 명령은 기존 파일을 강제로 덮어쓰지 않습니다. **작업 브랜치에서 `git reset --hard origin/main`을 실행하면 개조판 수정 사항이 사라질 수 있으므로 사용하지 마세요.** 현재 브랜치와 수정 파일을 확인한 뒤 병합·재배치 또는 커밋/백업 여부를 결정해야 합니다.
 
 
 ---
