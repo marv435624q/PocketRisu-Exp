@@ -49,8 +49,8 @@ PocketRisu 不为 Termux 提供预编译的二进制文件,因此由手机自行
 
 ```bash
 pkg install -y git && \
-  git clone https://github.com/PocketRisu/PocketRisu.git && \
-  cd PocketRisu && \
+  git clone https://github.com/marv435624q/PocketRisu-Exp.git && \
+  cd PocketRisu-Exp && \
   bash scripts/termux/build.sh
 ```
 
@@ -118,7 +118,7 @@ Termux 通知栏会显示唤醒锁指示,即使屏幕关闭服务器也会继续
 先使用 `Ctrl + C` 停止正在运行的服务器,然后执行:
 
 ```bash
-cd ~/PocketRisu && \
+cd ~/PocketRisu-Exp && \
   git pull --ff-only && \
   GYP_DEFINES="android_ndk_path=''" pnpm install --frozen-lockfile && \
   NODE_OPTIONS="--max-old-space-size=2048" pnpm build
@@ -134,7 +134,7 @@ cd ~/PocketRisu && \
 如果 `git pull` 因 `Your local changes to the following files would be overwritten by merge` 或 `Not possible to fast-forward` 而停止,请先使用以下命令将源码重置为最新版本,再重新执行上面的更新命令:
 
 ```bash
-cd ~/PocketRisu && git fetch origin && git reset --hard origin/main
+cd ~/PocketRisu-Exp && git fetch origin && git reset --hard origin/main
 ```
 
 `save/` 和 `backups/` 文件夹不受 git 管理,因此聊天、角色和设置等数据会保留。但对源文件所做的修改(例如更改端口、通过 `pnpm add` 更改的依赖等)会被丢弃。
@@ -144,9 +144,9 @@ cd ~/PocketRisu && git fetch origin && git reset --hard origin/main
 
 ## 6. 限制
 
-**Quick Tunnel(Cloudflare 自动隧道)在 Termux 上无法使用。** `cloudflared` 二进制文件与 Termux 的 DNS 和 TLS 环境不兼容。
+PocketRisu-Exp 支持在 Termux 中通过 **设置 → 远程访问 → 开启远程访问** 启动 Quick Tunnel，并通过关闭按钮结束共享。构建脚本会安装 Termux 的 `cloudflared` 软件包；现有安装可执行 `pkg install -y cloudflared`。无需额外开启终端手动运行隧道。
 
-PocketRisu 会自动检测 Termux 环境,在远程访问菜单中显示警告并隐藏启动按钮。
+已单独确认 Termux 软件包可运行；通过 PocketRisu 界面的完整流程仍需在 Android 真机上验证。详见[英文说明](../en/termux.md)。
 
 
 ---
