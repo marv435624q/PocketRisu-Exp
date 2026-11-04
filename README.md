@@ -46,6 +46,22 @@ PocketRisu is a self-hosted AI roleplay chat platform you run on your PC or pers
 - [Deactivating characters guide](docs/en/deactivate-characters.md)
 
 
+## Android (Termux) Quick Tunnel — PocketRisu-Exp
+
+This fork lets an Android phone host PocketRisu via Termux and uses the existing **Settings → Remote Access** controls to start and stop Cloudflare Quick Tunnel.
+
+```bash
+pkg install -y git
+git clone https://github.com/marv435624q/PocketRisu-Exp.git
+cd PocketRisu-Exp
+bash scripts/termux/build.sh
+node server/node/server.cjs
+```
+
+> This repository is private; cloning requires GitHub authentication. The Termux build script installs the packaged `cloudflared` binary.
+
+Open `http://localhost:6001` on the phone and select **Settings → Remote Access → Open Remote Access**. Use the displayed HTTPS URL or QR code on another device, then select **Close Remote Access** to stop sharing. No separate manual `cloudflared` session is needed. See the [Termux guide](docs/en/termux.md) for details.
+
 ## RisuAI Compatibility
 
 PocketRisu is derived from [RisuAI](https://github.com/kwaroran/RisuAI) and refined for self-hosted environments. Existing RisuAI data can be migrated wholesale, and all RisuAI ecosystem assets remain usable as-is.
