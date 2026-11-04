@@ -15,7 +15,6 @@
     let tunnelError = $state<string | null>(null);
     let qrDataUrl = $state<string | null>(null);
     let copied = $state(false);
-    let platform = $state<string | null>(null);
     let pollTimer: ReturnType<typeof setInterval> | null = null;
 
     async function authHeaders() {
@@ -29,7 +28,6 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
 
-            platform = data.platform ?? null;
             if (data.disabled) {
                 status = 'disabled';
             } else {
@@ -80,11 +78,19 @@
     async function stopTunnel() {
         if (!await alertConfirm(language.remoteAccessCloseConfirm)) return;
         try {
-            await fetch('/api/tunnel/stop', {
+            const res = await fetch('/api/tunnel/stop', {
                 method: 'POST',
                 headers: await authHeaders(),
             });
-        } catch {}
+            // Do not hide the stop button if the server did not stop the tunnel.
+            if (!res.ok) {
+                await fetchStatus();
+                return;
+            }
+        } catch {
+            await fetchStatus();
+            return;
+        }
         status = 'off';
         tunnelUrl = null;
         qrDataUrl = null;
@@ -113,13 +119,7 @@
 <div class="flex flex-col gap-4">
     <p class="text-sm text-textcolor2">{language.remoteAccessDesc}</p>
 
-    {#if platform === 'android'}
-        <ShAlert variant="destructive">
-            {#snippet icon()}<TriangleAlertIcon />{/snippet}
-            {language.remoteAccessTermuxWarning}
-        </ShAlert>
-
-    {:else if status === 'loading'}
+    {#if status === 'loading'}
         <div class="flex items-center justify-center py-8 text-textcolor2">
             <LoaderCircleIcon class="animate-spin" size={28} />
         </div>
