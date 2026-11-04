@@ -4,7 +4,7 @@
 
 # 원격 접속 가이드
 
-PocketRisu를 PC에 실행해두고 다른 기기(스마트폰, 태블릿, 다른 PC 등)에서 접속하는 방법은 두 가지입니다.
+PocketRisu 서버에 다른 기기(스마트폰, 태블릿, 다른 PC 등)에서 접속하는 방법은 두 가지입니다. Quick Tunnel은 PC 서버뿐 아니라 Termux에서 실행하는 Android 서버에서도 사용할 수 있도록 구성되어 있습니다.
 
 - [1. Quick Tunnel](#1-quick-tunnel) — PocketRisu 내장 기능. 별도 앱 불필요. 서버 재시작 시 URL 변경.
 - [2. Tailscale](#2-tailscale) — 사설 네트워크(VPN) 기반. URL 고정.
@@ -14,10 +14,13 @@ PocketRisu를 PC에 실행해두고 다른 기기(스마트폰, 태블릿, 다�
 
 PocketRisu가 임시 원격 접속 URL을 발급하는 내장 기능입니다.
 
-1. PC에서 PocketRisu 설정 > 원격 접속 > "원격 접속 열기" 클릭
-2. 표시되는 QR 코드를 스마트폰 카메라로 스캔하거나, URL을 다른 기기 브라우저에 직접 입력
+1. PocketRisu 서버가 실행 중인 기기에서 **설정 → 원격 접속 → 원격 접속 열기** 클릭
+2. 표시되는 QR 코드를 카메라로 스캔하거나, URL을 다른 기기 브라우저에 직접 입력
+3. 공유를 끝낼 때 **원격 접속 닫기** 클릭
 
-> 서버를 재시작하면 URL이 바뀝니다. 고정 URL이 필요하면 [Tailscale](#2-tailscale)을 사용하세요.
+Android/Termux에서는 먼저 `pkg install -y cloudflared`를 실행해야 합니다. [Termux 설치 및 Quick Tunnel 가이드](termux.md)를 참고하세요. 별도 Termux 세션에서 터널을 수동 실행하는 방식이 아닙니다.
+
+> Quick Tunnel URL은 외부에서 접근할 수 있는 공개 주소이므로 공유에 주의하세요. 터널을 새로 열거나 서버를 재시작하면 URL이 변경될 수 있습니다. 고정 URL이 필요하다면 [Tailscale](#2-tailscale)을 검토하세요.
 
 
 ---
