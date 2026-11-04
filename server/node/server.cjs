@@ -49,6 +49,7 @@ const {
     personaOwnerId,
 } = require('./assetManifestMigration.cjs');
 const { spawn, execSync } = require('child_process');
+const { findTermuxCloudflared, createQuickTunnelUrlReader } = require('./cloudflared-utils.cjs');
 const os = require('os');
 const { Readable, Transform } = require('stream');
 
@@ -1550,19 +1551,21 @@ let tunnelUrl = null;
 let tunnelStatus = 'off';   // 'off' | 'downloading' | 'starting' | 'running' | 'error'
 let tunnelError = null;
 let tunnelStartTimeout = null;
+let tunnelGeneration = 0;  // invalidate old child events and canceled downloads
 
 const CLOUDFLARED_ASSETS = {
     'darwin-arm64':  { url: 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-arm64.tgz', type: 'tgz' },
     'darwin-x64':    { url: 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-darwin-amd64.tgz', type: 'tgz' },
     'linux-x64':     { url: 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64', type: 'bin' },
     'linux-arm64':   { url: 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64', type: 'bin' },
-    // Termux reports process.platform === 'android' but the linux-arm64
-    // cloudflared binary (statically linked Go) runs cleanly on Bionic.
-    'android-arm64': { url: 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64', type: 'bin' },
     'win32-x64':     { url: 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe', type: 'bin' },
 };
 
 function findCloudflaredBinary() {
+    // Termux only: use the installed Termux package, never ./bin/cloudflared
+    // and never the upstream Linux ARM64 asset.
+    if (process.platform === 'android') return findTermuxCloudflared();
+
     const ext = process.platform === 'win32' ? '.exe' : '';
     const bundled = path.join(process.cwd(), 'bin', 'cloudflared' + ext);
     if (existsSync(bundled)) return bundled;
@@ -1628,6 +1631,7 @@ async function downloadCloudflared() {
 }
 
 function stopTunnel() {
+    tunnelGeneration++;
     if (tunnelStartTimeout) { clearTimeout(tunnelStartTimeout); tunnelStartTimeout = null; }
     if (tunnelProcess) {
         try { tunnelProcess.kill('SIGTERM'); } catch {}
@@ -9352,9 +9356,18 @@ app.post('/api/tunnel/start', async (req, res) => {
         return res.status(409).json({ error: 'Tunnel is already ' + tunnelStatus });
     }
 
+    const generation = ++tunnelGeneration;
     let cfPath = findCloudflaredBinary();
 
-    // Auto-download if not found
+    // Never download an upstream Linux binary on Android/Termux.
+    if (!cfPath && process.platform === 'android') {
+        tunnelStatus = 'error';
+        tunnelUrl = null;
+        tunnelError = 'Termux cloudflared is missing. Run: pkg install -y cloudflared';
+        return res.status(503).json({ error: tunnelError });
+    }
+
+    // Preserve desktop auto-download behavior.
     if (!cfPath) {
         tunnelStatus = 'downloading';
         tunnelError = null;
@@ -9363,46 +9376,52 @@ app.post('/api/tunnel/start', async (req, res) => {
         try {
             cfPath = await downloadCloudflared();
         } catch (e) {
+            if (generation !== tunnelGeneration) return;
             logger.error('[Tunnel] Download failed:', e.message);
             tunnelStatus = 'error';
             tunnelError = `Failed to download cloudflared: ${e.message}`;
             return;
         }
-        // After download, start the tunnel (response already sent)
-        startTunnelProcess(cfPath);
+        // A stop request during download must not start a tunnel afterwards.
+        if (generation !== tunnelGeneration) return;
+        startTunnelProcess(cfPath, generation);
         return;
     }
 
     tunnelStatus = 'starting';
     tunnelError = null;
     tunnelUrl = null;
-    startTunnelProcess(cfPath);
+    startTunnelProcess(cfPath, generation);
     res.json({ status: 'starting' });
 });
 
-function startTunnelProcess(cfPath) {
+function startTunnelProcess(cfPath, generation) {
+    if (generation !== tunnelGeneration) return;
     const port = process.env.PORT || 6001;
     tunnelStatus = 'starting';
     tunnelError = null;
     tunnelUrl = null;
 
     try {
-        tunnelProcess = spawn(cfPath, ['tunnel', '--url', 'http://localhost:' + port], {
+        const child = spawn(cfPath, ['tunnel', '--url', 'http://localhost:' + port], {
             stdio: ['ignore', 'pipe', 'pipe']
         });
+        tunnelProcess = child;
+        const readUrl = createQuickTunnelUrlReader();
 
-        tunnelProcess.stderr.on('data', (chunk) => {
-            const text = chunk.toString();
-            const match = text.match(/https:\/\/[a-zA-Z0-9-]+\.trycloudflare\.com/);
-            if (match && tunnelStatus === 'starting') {
-                tunnelUrl = match[0];
+        child.stderr.on('data', (chunk) => {
+            if (generation !== tunnelGeneration || tunnelProcess !== child) return;
+            const url = readUrl(chunk);
+            if (url && tunnelStatus === 'starting') {
+                tunnelUrl = url;
                 tunnelStatus = 'running';
                 if (tunnelStartTimeout) { clearTimeout(tunnelStartTimeout); tunnelStartTimeout = null; }
                 console.log(`[Tunnel] Quick tunnel URL: ${tunnelUrl}`);
             }
         });
 
-        tunnelProcess.on('error', (err) => {
+        child.on('error', (err) => {
+            if (generation !== tunnelGeneration || tunnelProcess !== child) return;
             logger.error('[Tunnel] Process error:', err.message);
             tunnelStatus = 'error';
             tunnelError = err.message;
@@ -9410,7 +9429,8 @@ function startTunnelProcess(cfPath) {
             if (tunnelStartTimeout) { clearTimeout(tunnelStartTimeout); tunnelStartTimeout = null; }
         });
 
-        tunnelProcess.on('exit', (code) => {
+        child.on('exit', (code) => {
+            if (generation !== tunnelGeneration || tunnelProcess !== child) return;
             if (tunnelStatus === 'running' || tunnelStatus === 'starting') {
                 console.log(`[Tunnel] Process exited with code ${code}`);
                 tunnelStatus = 'error';
@@ -9422,10 +9442,12 @@ function startTunnelProcess(cfPath) {
         });
 
         tunnelStartTimeout = setTimeout(() => {
+            if (generation !== tunnelGeneration || tunnelProcess !== child) return;
             if (tunnelStatus === 'starting') {
                 tunnelStatus = 'error';
                 tunnelError = 'Tunnel failed to start within 30 seconds';
-                if (tunnelProcess) { try { tunnelProcess.kill('SIGTERM'); } catch {} tunnelProcess = null; }
+                try { child.kill('SIGTERM'); } catch {}
+                tunnelProcess = null;
             }
             tunnelStartTimeout = null;
         }, 30000);
