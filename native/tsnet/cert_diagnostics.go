@@ -18,8 +18,22 @@ var allowedCertStages = map[string]bool{
 	"account": true,
 	"order": true,
 	"dns": true,
+	"dns-lookup": true,
+	"set-dns": true,
+	"noise-key": true,
+	"noise-client": true,
+	"set-dns-post": true,
+	"set-dns-response": true,
+	"acme-accept": true,
 	"issuance-wait": true,
 	"certificate": true,
+}
+
+var unprefixedControlCertStages = map[string]bool{
+	"noise-key": true,
+	"noise-client": true,
+	"set-dns-post": true,
+	"set-dns-response": true,
 }
 
 var allowedCertStageStates = map[string]bool{
@@ -85,7 +99,11 @@ func (t *certProgressTracker) Logf(format string, _ ...any) {
 	now := t.now()
 	var elapsed int64
 	t.mu.Lock()
-	if t.targetPrefix == "" || !strings.Contains(format[:marker], t.targetPrefix) {
+	if t.targetPrefix == "" {
+		t.mu.Unlock()
+		return
+	}
+	if !unprefixedControlCertStages[stage] && !strings.Contains(format[:marker], t.targetPrefix) {
 		t.mu.Unlock()
 		return
 	}
