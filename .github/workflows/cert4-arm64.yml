@@ -4,7 +4,7 @@ name: cert4 ARM64 diagnostic candidate
 on:
   push:
     branches:
-      - fix/termux-tsnet-cert4-diagnostics-20261105
+      - fix/termux-tsnet-cert4-diagnostics-20261106
     paths:
       - '.github/workflows/cert4-arm64.yml'
 
