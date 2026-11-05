@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore pinned cert1 source, then apply exact cert2 diagnostic-only ACME markers."""
+"""Restore pinned cert1 source, then apply exact cert3 diagnostic-only ACME/control markers."""
 from pathlib import Path, PurePosixPath
 import hashlib
 import json
@@ -141,6 +141,156 @@ def add_cert2_acme_markers(raw):
         '\tcert2DiagnosticLog(args.logf, args.diagnostic, "certificate done")\n'
         '\targs.logf("got cert")',
         'certificate stage')
+
+    return text.encode('utf-8')
+
+
+def add_cert3_acme_substages(raw):
+    text = raw.decode('utf-8')
+    text = text.replace('cert2DiagnosticLog', 'cert3DiagnosticLog')
+    text = text.replace('true only for PocketRisu explicit cert2 verification',
+                        'true only for PocketRisu explicit cert3 verification')
+
+    text = replace_once(text,
+        '\t\t\tif err := fulfillACMEDNS01Challenge(ctx, b, ac, az, args.logf, args.traceACME); err != nil {\n',
+        '\t\t\tif err := fulfillACMEDNS01Challenge(ctx, b, ac, az, args.logf, args.traceACME, args.diagnostic); err != nil {\n',
+        'cert3 dns diagnostic argument')
+
+    text = replace_once(text,
+        'func fulfillACMEDNS01Challenge(ctx context.Context, b *ipnlocal.LocalBackend, ac *xacme.Client, az *xacme.Authorization, logf logger.Logf, traceACME func(any)) error {\n',
+        'func fulfillACMEDNS01Challenge(ctx context.Context, b *ipnlocal.LocalBackend, ac *xacme.Client, az *xacme.Authorization, logf logger.Logf, traceACME func(any), diagnostic bool) error {\n',
+        'cert3 dns helper signature')
+
+    text = replace_once(text,
+        '\t\tvar resolver net.Resolver\n'
+        '\t\tlookupCtx, lookupCancel := context.WithTimeout(ctx, 500*time.Millisecond)\n'
+        '\t\ttxts, _ := resolver.LookupTXT(lookupCtx, key)\n'
+        '\t\tlookupCancel()\n',
+        '\t\tvar resolver net.Resolver\n'
+        '\t\tcert3DiagnosticLog(logf, diagnostic, "dns-lookup start")\n'
+        '\t\tlookupCtx, lookupCancel := context.WithTimeout(ctx, 500*time.Millisecond)\n'
+        '\t\ttxts, _ := resolver.LookupTXT(lookupCtx, key)\n'
+        '\t\tlookupCancel()\n'
+        '\t\tcert3DiagnosticLog(logf, diagnostic, "dns-lookup done")\n',
+        'cert3 dns lookup')
+
+    text = replace_once(text,
+        '\t\t\tlogf("starting SetDNS call for %s...", key)\n'
+        '\t\t\terr = b.SetDNS(ctx, key, rec)\n'
+        '\t\t\tif err != nil {\n'
+        '\t\t\t\treturn fmt.Errorf("SetDNS %q => %q: %w", key, rec, err)\n'
+        '\t\t\t}\n'
+        '\t\t\tlogf("did SetDNS for %s", key)\n',
+        '\t\t\tlogf("starting SetDNS call for %s...", key)\n'
+        '\t\t\tcert3DiagnosticLog(logf, diagnostic, "set-dns start")\n'
+        '\t\t\terr = b.SetDNS(ctx, key, rec)\n'
+        '\t\t\tif err != nil {\n'
+        '\t\t\t\tcert3DiagnosticLog(logf, diagnostic, "set-dns error")\n'
+        '\t\t\t\treturn fmt.Errorf("SetDNS %q => %q: %w", key, rec, err)\n'
+        '\t\t\t}\n'
+        '\t\t\tcert3DiagnosticLog(logf, diagnostic, "set-dns done")\n'
+        '\t\t\tlogf("did SetDNS for %s", key)\n',
+        'cert3 set-dns wrapper')
+
+    text = replace_once(text,
+        '\t\tchal, err := ac.Accept(ctx, ch)\n'
+        '\t\tif err != nil {\n'
+        '\t\t\treturn fmt.Errorf("Accept: %v", err)\n'
+        '\t\t}\n'
+        '\t\ttraceACME(chal)\n',
+        '\t\tcert3DiagnosticLog(logf, diagnostic, "acme-accept start")\n'
+        '\t\tchal, err := ac.Accept(ctx, ch)\n'
+        '\t\tif err != nil {\n'
+        '\t\t\tcert3DiagnosticLog(logf, diagnostic, "acme-accept error")\n'
+        '\t\t\treturn fmt.Errorf("Accept: %v", err)\n'
+        '\t\t}\n'
+        '\t\tcert3DiagnosticLog(logf, diagnostic, "acme-accept done")\n'
+        '\t\ttraceACME(chal)\n',
+        'cert3 acme accept')
+    return text.encode('utf-8')
+
+
+def add_cert3_control_substages(raw):
+    text = raw.decode('utf-8')
+    text = replace_once(text,
+        '// setDNSNoise sends the SetDNSRequest request to the control plane server over Noise,\n',
+        'func cert3ControlDiagnosticLog(logf logger.Logf, event string) {\n'
+        '\tif os.Getenv("POCKETRISU_CERT3_DIAGNOSTICS") == "1" {\n'
+        '\t\tlogf("pocketrisu-cert-stage: " + event)\n'
+        '\t}\n'
+        '}\n\n'
+        '// setDNSNoise sends the SetDNSRequest request to the control plane server over Noise,\n',
+        'cert3 control helper')
+
+    text = replace_once(text,
+        'func (c *Direct) setDNSNoise(ctx context.Context, req *tailcfg.SetDNSRequest) error {\n'
+        '\tif err := c.ensureServerNoiseKey(ctx); err != nil {\n'
+        '\t\treturn err\n'
+        '\t}\n'
+        '\tnewReq := *req\n',
+        'func (c *Direct) setDNSNoise(ctx context.Context, req *tailcfg.SetDNSRequest) error {\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "noise-key start")\n'
+        '\tif err := c.ensureServerNoiseKey(ctx); err != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "noise-key error")\n'
+        '\t\treturn err\n'
+        '\t}\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "noise-key done")\n'
+        '\tnewReq := *req\n',
+        'cert3 noise key')
+
+    text = replace_once(text,
+        '\tnc, err := c.getNoiseClient()\n'
+        '\tif err != nil {\n'
+        '\t\treturn err\n'
+        '\t}\n'
+        '\tres, err := nc.Post(ctx, "/machine/set-dns", newReq.NodeKey, &newReq)\n'
+        '\tif err != nil {\n'
+        '\t\treturn err\n'
+        '\t}\n',
+        '\tcert3ControlDiagnosticLog(c.logf, "noise-client start")\n'
+        '\tnc, err := c.getNoiseClient()\n'
+        '\tif err != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "noise-client error")\n'
+        '\t\treturn err\n'
+        '\t}\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "noise-client done")\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "set-dns-post start")\n'
+        '\tres, err := nc.Post(ctx, "/machine/set-dns", newReq.NodeKey, &newReq)\n'
+        '\tif err != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "set-dns-post error")\n'
+        '\t\treturn err\n'
+        '\t}\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "set-dns-post done")\n',
+        'cert3 noise client and post')
+
+    text = replace_once(text,
+        '\tdefer res.Body.Close()\n'
+        '\tif res.StatusCode != 200 {\n'
+        '\t\tmsg, _ := io.ReadAll(res.Body)\n'
+        '\t\treturn fmt.Errorf("set-dns response: %v, %.200s", res.Status, strings.TrimSpace(string(msg)))\n'
+        '\t}\n'
+        '\tvar setDNSRes tailcfg.SetDNSResponse\n'
+        '\tif err := json.NewDecoder(res.Body).Decode(&setDNSRes); err != nil {\n'
+        '\t\tc.logf("error decoding SetDNSResponse: %v", err)\n'
+        '\t\treturn fmt.Errorf("set-dns-response: %w", err)\n'
+        '\t}\n\n'
+        '\treturn nil\n',
+        '\tdefer res.Body.Close()\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "set-dns-response start")\n'
+        '\tif res.StatusCode != 200 {\n'
+        '\t\tmsg, _ := io.ReadAll(res.Body)\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "set-dns-response error")\n'
+        '\t\treturn fmt.Errorf("set-dns response: %v, %.200s", res.Status, strings.TrimSpace(string(msg)))\n'
+        '\t}\n'
+        '\tvar setDNSRes tailcfg.SetDNSResponse\n'
+        '\tif err := json.NewDecoder(res.Body).Decode(&setDNSRes); err != nil {\n'
+        '\t\tc.logf("error decoding SetDNSResponse: %v", err)\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "set-dns-response error")\n'
+        '\t\treturn fmt.Errorf("set-dns-response: %w", err)\n'
+        '\t}\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "set-dns-response done")\n\n'
+        '\treturn nil\n',
+        'cert3 set-dns response')
     return text.encode('utf-8')
 
 
@@ -166,8 +316,11 @@ with tarfile.open(archive, 'r:gz') as tar:
 
 expected = dict(baseline)
 cert_file = target / 'feature/acme/cert.go'
+control_file = target / 'control/controlclient/direct.go'
 assert cert_file in expected, 'Pinned ACME source missing'
-expected[cert_file] = add_cert2_acme_markers(expected[cert_file])
+assert control_file in expected, 'Pinned control client source missing'
+expected[cert_file] = add_cert3_acme_substages(add_cert2_acme_markers(expected[cert_file]))
+expected[control_file] = add_cert3_control_substages(expected[control_file])
 
 if target.exists():
     actual_files = {path for path in target.rglob('*') if path.is_file()}
@@ -189,6 +342,13 @@ for path, raw in expected.items():
 assert (target / 'VERSION.txt').read_text().strip() == record['tailscale']
 assert 'tailscale.com v' + record['tailscale'] in (source / 'go.mod').read_text()
 cert_bytes = cert_file.read_bytes()
+control_bytes = control_file.read_bytes()
 assert b'pocketrisu-cert-stage: ' in cert_bytes
-assert b'cert2DiagnosticLog(args.logf, args.diagnostic, "certificate done")' in cert_bytes
-print('Pinned cert1 source restored and exact cert2 diagnostic markers are present; unknown edits were not overwritten')
+assert b'cert3DiagnosticLog(args.logf, args.diagnostic, "certificate done")' in cert_bytes
+assert b'cert3DiagnosticLog(logf, diagnostic, "dns-lookup start")' in cert_bytes
+assert b'cert3DiagnosticLog(logf, diagnostic, "set-dns start")' in cert_bytes
+assert b'cert3DiagnosticLog(logf, diagnostic, "acme-accept start")' in cert_bytes
+assert b'cert3ControlDiagnosticLog(c.logf, "noise-key start")' in control_bytes
+assert b'cert3ControlDiagnosticLog(c.logf, "set-dns-post start")' in control_bytes
+assert b'cert3ControlDiagnosticLog(c.logf, "set-dns-response start")' in control_bytes
+print('Pinned cert1 source restored and exact cert3 diagnostic markers are present; unknown edits were not overwritten')
