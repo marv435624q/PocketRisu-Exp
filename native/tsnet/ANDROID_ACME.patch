@@ -1,0 +1,22 @@
+--- a/ipn/localapi/cert.go
++++ b/ipn/localapi/cert.go
+@@ -1,7 +1,7 @@
+ // Copyright (c) Tailscale Inc & contributors
+ // SPDX-License-Identifier: BSD-3-Clause
+ 
+-//go:build !ios && !android && !js && !ts_omit_acme
++//go:build !ios && !js && !ts_omit_acme
+ 
+ package localapi
+ 
+--- a/ipn/localapi/disabled_stubs.go
++++ b/ipn/localapi/disabled_stubs.go
+@@ -1,7 +1,7 @@
+ // Copyright (c) Tailscale Inc & contributors
+ // SPDX-License-Identifier: BSD-3-Clause
+ 
+-//go:build ios || android || js
++//go:build ios || js || (android && ts_omit_acme)
+ 
+ package localapi
+ 

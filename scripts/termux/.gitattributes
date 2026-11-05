@@ -1,0 +1,4 @@
+build-tsnet-candidate.sh text eol=lf
+test-tsnet-args.sh text eol=lf
+prepare-tsnet-source.py text eol=lf
+.gitattributes text eol=lf

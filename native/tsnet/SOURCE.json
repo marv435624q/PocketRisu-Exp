@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "candidate": "tsnet-v1.104.5-argv1",
+  "tailscale": "1.104.5",
+  "go": "1.27.3",
+  "binary": {
+    "path": "prebuilt/termux/arm64/tsnet-v1.104.5-argv1/libpocketrisu_tsnet_exec.so",
+    "bytes": 21758246,
+    "sha256": "49c998c1a1701340d0855068f8f5d42126ff948dadd9998cd44d32438658662e"
+  },
+  "elf": {
+    "elfType": 3,
+    "interpreter": "/system/bin/linker64",
+    "neededCount": 0,
+    "needed": [],
+    "loadAlignment": [
+      65536,
+      65536,
+      65536,
+      65536
+    ]
+  },
+  "sourceArchive": {
+    "path": "prebuilt/termux/arm64/tsnet-v1.104.5-argv1/tsnet-v1.104.5-argv1-source.tar.gz",
+    "prefix": "tsnet-v1.104.5-argv1-source",
+    "bytes": 6222866,
+    "sha256": "7e1c0e52b6276d88ad67874d7069469398b4ef626a2024427d4762ca432ffce3"
+  },
+  "upstream": {
+    "url": "https://github.com/tailscale/tailscale/archive/refs/tags/v1.104.5.tar.gz",
+    "sha256": "0704fa4ce8624463ce421f45f0d20ae8d710b9ee7354eaa1f4a772e9a3cd4ded",
+    "hashVerification": "SHA-256 computed after download; no independent signature verification"
+  },
+  "dependencySourceArchive": {
+    "path": "prebuilt/termux/arm64/tsnet-v1.104.4-source.tar.gz",
+    "sha256": "f5a17e6896c1ba42f21f860a09614c29a21b48a9e2878eeee6fd42ccd0bdece7"
+  },
+  "sidecarBase": {
+    "repository": "PocketRisu-Android",
+    "commit": "a67a75217f94c0d756f4066197e9b0a458bdebe6",
+    "publicSourceArchive": {
+      "path": "prebuilt/termux/arm64/tsnet-v1.104.4-source.tar.gz",
+      "sha256": "f5a17e6896c1ba42f21f860a09614c29a21b48a9e2878eeee6fd42ccd0bdece7"
+    }
+  },
+  "patches": [
+    "Existing Android ACME localapi build tags",
+    "Android Termux exec marker plus same regular file: strip one inserted argv entry",
+    "Safe standalone --diagnose-argv and parser-only --check-args"
+  ],
+  "verification": {
+    "goModVerify": "all modules verified after resolving exact public module metadata; go.mod/go.sum unchanged",
+    "hostRaceTests": 15,
+    "hostCliCases": 14,
+    "externalNetworkDuringTests": false,
+    "termuxExecuted": false,
+    "tailscaleLoginOrDeviceRegistration": false
+  }
+}
