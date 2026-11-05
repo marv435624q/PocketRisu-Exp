@@ -188,5 +188,7 @@ for path, raw in expected.items():
 
 assert (target / 'VERSION.txt').read_text().strip() == record['tailscale']
 assert 'tailscale.com v' + record['tailscale'] in (source / 'go.mod').read_text()
-assert b'pocketrisu-cert-stage: certificate done' in cert_file.read_bytes()
+cert_bytes = cert_file.read_bytes()
+assert b'pocketrisu-cert-stage: ' in cert_bytes
+assert b'cert2DiagnosticLog(args.logf, args.diagnostic, "certificate done")' in cert_bytes
 print('Pinned cert1 source restored and exact cert2 diagnostic markers are present; unknown edits were not overwritten')
