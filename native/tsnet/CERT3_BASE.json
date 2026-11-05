@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "candidate": "tsnet-v1.104.5-cert3",
+  "baseCandidate": "tsnet-v1.104.5-cert2",
+  "baseCommit": "6d13f8955113469e215aaff6c3ebd4e0b6c5e38a",
+  "baseSourceRecord": "native/tsnet/SOURCE.json",
+  "diagnostics": {
+    "acmeStages": [
+      "account",
+      "order",
+      "dns",
+      "dns-lookup",
+      "set-dns",
+      "acme-accept",
+      "issuance-wait",
+      "certificate"
+    ],
+    "controlStages": [
+      "noise-key",
+      "noise-client",
+      "set-dns-post",
+      "set-dns-response"
+    ],
+    "httpsPreparationStages": [
+      "prerequisites",
+      "certificate",
+      "post-certificate",
+      "listener"
+    ],
+    "networkClasses": [
+      "dns",
+      "tcp",
+      "tls",
+      "timeout",
+      "other"
+    ],
+    "verifyHTTPSMaxPreparationAttempts": 2
+  },
+  "privacy": "Structured allowlisted stage/state/elapsed values only; no domain, DNS TXT value, URL, key, account, auth or state contents."
+}
