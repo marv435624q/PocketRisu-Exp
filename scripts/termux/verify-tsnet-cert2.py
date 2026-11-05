@@ -243,6 +243,23 @@ def consume_child_json(raw, statuses, progress):
     return None, None
 
 
+def consume_pending_lines(pending, statuses, progress, final, flush=False):
+    terminal = None
+    while b"\n" in pending:
+        line, pending = pending.split(b"\n", 1)
+        parsed, terminal = consume_child_json(line, statuses, progress)
+        if parsed is not None:
+            final = parsed
+        if terminal is not None:
+            return pending, final, terminal
+    if flush and pending.strip():
+        parsed, terminal = consume_child_json(pending, statuses, progress)
+        if parsed is not None:
+            final = parsed
+        pending = b""
+    return pending, final, terminal
+
+
 def successful_https_exit(returncode, final):
     return bool(returncode == 0 and final is not None and final["success"] and final["tlsVerified"]
                 and final["httpStatus"] is not None and final["errorCode"] is None)
@@ -261,8 +278,19 @@ def _online(state, hostname, timeout):
                                 stderr=subprocess.DEVNULL, start_new_session=True, env=child_environment())
         selector = selectors.DefaultSelector()
         selector.register(proc.stdout, selectors.EVENT_READ)
+        fd = proc.stdout.fileno()
+        os.set_blocking(fd, False)
         deadline = time.monotonic() + timeout
         pending = b""
+
+        def feed(chunk):
+            nonlocal pending, final
+            pending += chunk
+            if len(pending) > 65536:
+                return "output-limit"
+            pending, final, terminal = consume_pending_lines(pending, statuses, progress, final)
+            return terminal
+
         while time.monotonic() < deadline:
             if not selector.get_map():
                 try:
@@ -274,31 +302,39 @@ def _online(state, hostname, timeout):
             if not events and proc.poll() is not None:
                 break
             for key, _ in events:
-                chunk = os.read(key.fd, 4096)
+                try:
+                    chunk = os.read(key.fd, 4096)
+                except BlockingIOError:
+                    continue
                 if not chunk:
                     selector.unregister(proc.stdout)
                     break
-                pending += chunk
-                if len(pending) > 65536:
-                    return {"ok": False, "errorCode": "output-limit", "statuses": statuses, "progress": progress}
-                while b"\n" in pending:
-                    line, pending = pending.split(b"\n", 1)
-                    parsed, terminal = consume_child_json(line, statuses, progress)
-                    if parsed is not None:
-                        final = parsed
-                    if terminal is not None:
-                        return {"ok": False, "errorCode": terminal, "statuses": statuses, "progress": progress,
-                                "verification": final}
+                terminal = feed(chunk)
+                if terminal is not None:
+                    return {"ok": False, "errorCode": terminal, "statuses": statuses, "progress": progress,
+                            "verification": final}
             if proc.poll() is not None and not events:
                 break
 
-        if pending.strip():
-            parsed, terminal = consume_child_json(pending, statuses, progress)
-            if parsed is not None:
-                final = parsed
-            if terminal is not None:
-                return {"ok": False, "errorCode": terminal, "statuses": statuses, "progress": progress,
-                        "verification": final}
+        # Once the leader has exited, consume every byte already queued in its
+        # non-blocking stdout pipe before interpreting its exit status.
+        if proc.poll() is not None:
+            while True:
+                try:
+                    chunk = os.read(fd, 4096)
+                except BlockingIOError:
+                    break
+                if not chunk:
+                    break
+                terminal = feed(chunk)
+                if terminal is not None:
+                    return {"ok": False, "errorCode": terminal, "statuses": statuses, "progress": progress,
+                            "verification": final}
+
+        pending, final, terminal = consume_pending_lines(pending, statuses, progress, final, flush=True)
+        if terminal is not None:
+            return {"ok": False, "errorCode": terminal, "statuses": statuses, "progress": progress,
+                    "verification": final}
 
         if proc.poll() is None:
             return {"ok": False, "errorCode": "deadline", "statuses": statuses, "progress": progress,

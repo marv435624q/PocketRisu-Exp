@@ -69,9 +69,15 @@ class VerifierContractTests(unittest.TestCase):
 
     def test_final_json_without_newline_uses_same_parser(self):
         statuses, progress = [], []
-        final, terminal = verifier.consume_child_json(
-            b'{"type":"https-verification","success":true,"tlsVerified":true,"httpStatus":204}',
-            statuses, progress)
+        pending = (b'{"type":"https-progress","stage":"order","state":"done","elapsedMs":12}\n'
+                   b'{"type":"https-verification","success":true,"tlsVerified":true,"httpStatus":204}')
+        pending, final, terminal = verifier.consume_pending_lines(pending, statuses, progress, None, flush=False)
+        self.assertIsNone(terminal)
+        self.assertIsNone(final)
+        self.assertEqual(progress, [{"stage": "order", "state": "done", "elapsedMs": 12}])
+        self.assertTrue(pending)
+        pending, final, terminal = verifier.consume_pending_lines(pending, statuses, progress, final, flush=True)
+        self.assertEqual(pending, b"")
         self.assertIsNone(terminal)
         self.assertTrue(verifier.successful_https_exit(0, final))
 
