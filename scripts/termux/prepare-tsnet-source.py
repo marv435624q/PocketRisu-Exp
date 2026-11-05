@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore pinned cert1 source, then apply exact cert4 diagnostic-only ACME/control/Noise markers."""
+"""Restore pinned cert1 source, apply cert5 diagnostics, and isolate SetDNS on a fresh Noise client."""
 from pathlib import Path, PurePosixPath
 import hashlib
 import json
@@ -433,6 +433,63 @@ def add_cert4_ts2021_substages(raw):
     return text.encode('utf-8')
 
 
+def add_cert5_fresh_setdns(raw):
+    text = raw.decode('utf-8')
+    text = replace_once(text,
+        '// setDNSNoise sends the SetDNSRequest request to the control plane server over Noise,\n',
+        'func (c *Direct) newOneShotNoiseClient() (*ts2021.Client, error) {\n'
+        '\tc.mu.Lock()\n'
+        '\tserverNoiseKey := c.serverNoiseKey\n'
+        '\tc.mu.Unlock()\n'
+        '\tif serverNoiseKey.IsZero() {\n'
+        '\t\treturn nil, errors.New("zero serverNoiseKey")\n'
+        '\t}\n'
+        '\tvar dp func() *tailcfg.ControlDialPlan\n'
+        '\tif c.dialPlan != nil {\n'
+        '\t\tdp = c.dialPlan.Load\n'
+        '\t}\n'
+        '\tk, err := c.getMachinePrivKey()\n'
+        '\tif err != nil {\n'
+        '\t\treturn nil, err\n'
+        '\t}\n'
+        '\treturn ts2021.NewClient(ts2021.ClientOpts{\n'
+        '\t\tPrivKey:       k,\n'
+        '\t\tServerPubKey:  serverNoiseKey,\n'
+        '\t\tServerURL:     c.serverURL,\n'
+        '\t\tDialer:        c.dialer,\n'
+        '\t\tDNSCache:      c.dnsCache,\n'
+        '\t\tLogf:          c.logf,\n'
+        '\t\tNetMon:        c.netMon,\n'
+        '\t\tHealthTracker: c.health,\n'
+        '\t\tExtraRootCAs:  c.extraRootCAs,\n'
+        '\t\tDialPlan:      dp,\n'
+        '\t})\n'
+        '}\n\n'
+        '// setDNSNoise sends the SetDNSRequest request to the control plane server over Noise,\n',
+        'cert5 fresh Noise helper')
+
+    text = replace_once(text,
+        '\tcert3ControlDiagnosticLog(c.logf, "noise-client start")\n'
+        '\tnc, err := c.getNoiseClient()\n'
+        '\tif err != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "noise-client error")\n'
+        '\t\treturn err\n'
+        '\t}\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "noise-client done")\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "set-dns-post start")\n',
+        '\tcert3ControlDiagnosticLog(c.logf, "fresh-noise-client start")\n'
+        '\tnc, err := c.newOneShotNoiseClient()\n'
+        '\tif err != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "fresh-noise-client error")\n'
+        '\t\treturn err\n'
+        '\t}\n'
+        '\tdefer nc.Close()\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "fresh-noise-client done")\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "set-dns-post start")\n',
+        'cert5 SetDNS fresh Noise path')
+    return text.encode('utf-8')
+
+
 for parent in (source, source / 'third_party', target):
     assert not parent.is_symlink(), 'Source directory links are not supported'
 record = json.loads((source / 'SOURCE.json').read_text(encoding='utf-8'))
@@ -464,10 +521,15 @@ assert controlhttp_file in expected, 'Pinned control HTTP source missing'
 assert ts2021_file in expected, 'Pinned ts2021 source missing'
 expected[cert_file] = add_cert3_acme_substages(add_cert2_acme_markers(expected[cert_file]))
 control_source = add_cert3_control_substages(expected[control_file])
-control_source = control_source.replace(b'POCKETRISU_CERT3_DIAGNOSTICS', b'POCKETRISU_CERT4_DIAGNOSTICS')
+control_source = add_cert5_fresh_setdns(control_source)
+control_source = control_source.replace(b'POCKETRISU_CERT3_DIAGNOSTICS', b'POCKETRISU_CERT5_DIAGNOSTICS')
 expected[control_file] = control_source
-expected[controlhttp_file] = add_cert4_controlhttp_substages(expected[controlhttp_file])
-expected[ts2021_file] = add_cert4_ts2021_substages(expected[ts2021_file])
+controlhttp_source = add_cert4_controlhttp_substages(expected[controlhttp_file])
+controlhttp_source = controlhttp_source.replace(b'POCKETRISU_CERT4_DIAGNOSTICS', b'POCKETRISU_CERT5_DIAGNOSTICS')
+expected[controlhttp_file] = controlhttp_source
+ts2021_source = add_cert4_ts2021_substages(expected[ts2021_file])
+ts2021_source = ts2021_source.replace(b'POCKETRISU_CERT4_DIAGNOSTICS', b'POCKETRISU_CERT5_DIAGNOSTICS')
+expected[ts2021_file] = ts2021_source
 
 if target.exists():
     actual_files = {path for path in target.rglob('*') if path.is_file()}
@@ -497,11 +559,16 @@ assert b'cert3DiagnosticLog(args.logf, args.diagnostic, "certificate done")' in 
 assert b'cert3DiagnosticLog(logf, diagnostic, "dns-lookup start")' in cert_bytes
 assert b'cert3DiagnosticLog(logf, diagnostic, "set-dns start")' in cert_bytes
 assert b'cert3DiagnosticLog(logf, diagnostic, "acme-accept start")' in cert_bytes
-assert b'POCKETRISU_CERT4_DIAGNOSTICS' in control_bytes
+assert b'POCKETRISU_CERT5_DIAGNOSTICS' in control_bytes
+assert b'newOneShotNoiseClient' in control_bytes
+assert b'cert3ControlDiagnosticLog(c.logf, "fresh-noise-client start")' in control_bytes
+assert b'defer nc.Close()' in control_bytes
 assert b'cert3ControlDiagnosticLog(c.logf, "noise-key start")' in control_bytes
 assert b'cert3ControlDiagnosticLog(c.logf, "set-dns-post start")' in control_bytes
+assert b'POCKETRISU_CERT5_DIAGNOSTICS' in controlhttp_bytes
 assert b'cert4Diagnostic("noise-upgrade-" + suffix + " start")' in controlhttp_bytes
 assert b'cert4Diagnostic("noise-handshake-" + suffix + " start")' in controlhttp_bytes
 assert b'noise-dial-443' in controlhttp_bytes
+assert b'POCKETRISU_CERT5_DIAGNOSTICS' in ts2021_bytes
 assert b'cert4Diagnostic("noise-h2-request start")' in ts2021_bytes
-print('Pinned cert1 source restored and exact cert4 diagnostic markers are present; unknown edits were not overwritten')
+print('Pinned cert1 source restored; cert5 fresh SetDNS Noise path and diagnostics are present; unknown edits were not overwritten')
