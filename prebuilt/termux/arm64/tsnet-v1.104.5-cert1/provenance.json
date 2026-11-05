@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "candidate": "tsnet-v1.104.5-cert1",
+  "tailscale": "1.104.5",
+  "go": "1.27.3",
+  "binary": {
+    "path": "prebuilt/termux/arm64/tsnet-v1.104.5-cert1/libpocketrisu_tsnet_exec.so",
+    "bytes": 21889318,
+    "sha256": "9e1e30367c8a361b92b38e0085f6bb67492d4e4b5b4be915fc6a887e8b65c5bb"
+  },
+  "elf": {
+    "elfType": 3,
+    "interpreter": "/system/bin/linker64",
+    "neededCount": 0,
+    "needed": [],
+    "loadAlignment": [
+      65536,
+      65536,
+      65536,
+      65536
+    ]
+  },
+  "sourceArchive": {
+    "path": "prebuilt/termux/arm64/tsnet-v1.104.5-cert1/tsnet-v1.104.5-cert1-source.tar.gz",
+    "prefix": "tsnet-v1.104.5-cert1-source",
+    "bytes": 6389341,
+    "sha256": "00e768cd0d02973bef1a65abc90ced1e5b99b24160467e4191620818fe5b081e"
+  },
+  "upstream": {
+    "url": "https://github.com/tailscale/tailscale/archive/refs/tags/v1.104.5.tar.gz",
+    "sha256": "0704fa4ce8624463ce421f45f0d20ae8d710b9ee7354eaa1f4a772e9a3cd4ded",
+    "hashVerification": "SHA-256 computed after download; no independent signature verification",
+    "tagObject": "78838476328d1a97dc05400ad23086a9dbe616da",
+    "commit": "73a48057aaf5f60e4f770b398e9b7af576b01dbe"
+  },
+  "dependencySourceArchive": {
+    "path": "prebuilt/termux/arm64/tsnet-v1.104.4-source.tar.gz",
+    "sha256": "f5a17e6896c1ba42f21f860a09614c29a21b48a9e2878eeee6fd42ccd0bdece7"
+  },
+  "sidecarBase": {
+    "repository": "PocketRisu-Android",
+    "commit": "a67a75217f94c0d756f4066197e9b0a458bdebe6",
+    "publicSourceArchive": {
+      "path": "prebuilt/termux/arm64/tsnet-v1.104.4-source.tar.gz",
+      "sha256": "f5a17e6896c1ba42f21f860a09614c29a21b48a9e2878eeee6fd42ccd0bdece7"
+    }
+  },
+  "patches": [
+    "Existing Android ACME localapi build tags",
+    "Android Termux exec marker plus same regular file: strip one inserted argv entry",
+    "Safe standalone --diagnose-argv and parser-only --check-args",
+    "SetDNS lazy control Noise key fetch with cancellation, close and concurrency protection",
+    "Official Long/Short linker stamps plus custom source fingerprint",
+    "Optional existing-registration guard and bounded sanitized HTTPS verification"
+  ],
+  "verification": {
+    "goModVerify": "all modules verified; go.mod/go.sum unchanged",
+    "sidecarRaceTests": 24,
+    "controlRaceTests": 7,
+    "registrationGuardRaceTests": 2,
+    "hostCliCases": 19,
+    "verifierMockedUnitTests": 6,
+    "externalNetworkDuringTests": false,
+    "newCandidateTermuxExecuted": false,
+    "realACMEOrHTTPS": false
+  },
+  "identity": {
+    "candidate": "tsnet-v1.104.5-cert1",
+    "baseVersion": "1.104.5",
+    "sourceId": "0db6aff6de9fc04413fef2af30ecfaeeb0c3028132c0d0a79c6a1e0eaa065c35",
+    "longVersion": "1.104.5-pocketrisu-exp-cert1-s0db6aff6de9f"
+  },
+  "candidateBase": {
+    "commit": "f4a6d99b08ef491d2557692b7ec7b1c6e06c6dde",
+    "binarySha256": "49c998c1a1701340d0855068f8f5d42126ff948dadd9998cd44d32438658662e"
+  },
+  "baselineUserReportedDeviceResults": {
+    "candidate": "tsnet-v1.104.5-argv1",
+    "offlineCases": 6,
+    "argvFix": "passed",
+    "loginRegistration": "passed",
+    "https": "failed; timeout then zero serverNoiseKey",
+    "displayVersion": "1.104.5-ERR-BuildInfo"
+  },
+  "limits": [
+    "Exact device sequence leaving serverNoiseKey empty is not established",
+    "First certificate timeout cause is not established",
+    "Real ACME issuance and external-peer HTTPS require user follow-up"
+  ]
+}

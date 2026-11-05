@@ -1,0 +1,98 @@
+=== RUN   TestNormalizeStartupArgs
+=== RUN   TestNormalizeStartupArgs/absolute
+=== RUN   TestNormalizeStartupArgs/relative_marker
+=== RUN   TestNormalizeStartupArgs/no_marker
+=== RUN   TestNormalizeStartupArgs/non_android
+=== RUN   TestNormalizeStartupArgs/different_file_same_name
+=== RUN   TestNormalizeStartupArgs/directory_is_not_executable_file
+=== RUN   TestNormalizeStartupArgs/relative_first_arg
+=== RUN   TestNormalizeStartupArgs/ordinary_options
+=== RUN   TestNormalizeStartupArgs/one_insertion_only
+=== RUN   TestNormalizeStartupArgs/no_arguments
+=== RUN   TestNormalizeStartupArgs/symlink
+--- PASS: TestNormalizeStartupArgs (0.06s)
+    --- PASS: TestNormalizeStartupArgs/absolute (0.00s)
+    --- PASS: TestNormalizeStartupArgs/relative_marker (0.00s)
+    --- PASS: TestNormalizeStartupArgs/no_marker (0.00s)
+    --- PASS: TestNormalizeStartupArgs/non_android (0.00s)
+    --- PASS: TestNormalizeStartupArgs/different_file_same_name (0.00s)
+    --- PASS: TestNormalizeStartupArgs/directory_is_not_executable_file (0.00s)
+    --- PASS: TestNormalizeStartupArgs/relative_first_arg (0.00s)
+    --- PASS: TestNormalizeStartupArgs/ordinary_options (0.00s)
+    --- PASS: TestNormalizeStartupArgs/one_insertion_only (0.00s)
+    --- PASS: TestNormalizeStartupArgs/no_arguments (0.00s)
+    --- PASS: TestNormalizeStartupArgs/symlink (0.01s)
+=== RUN   TestParseOptionsAndDuplicateControl
+--- PASS: TestParseOptionsAndDuplicateControl (0.02s)
+=== RUN   TestNormalAPKAndExecArgumentsStayIntact
+--- PASS: TestNormalAPKAndExecArgumentsStayIntact (0.01s)
+=== RUN   TestDiagnosticIsNarrowAndContainsNoValues
+--- PASS: TestDiagnosticIsNarrowAndContainsNoValues (0.02s)
+=== RUN   TestParserErrorsAndHelpDoNotEchoSuppliedValues
+--- PASS: TestParserErrorsAndHelpDoNotEchoSuppliedValues (0.00s)
+=== RUN   TestValidateBuildInformation
+=== RUN   TestValidateBuildInformation/valid
+=== RUN   TestValidateBuildInformation/base
+=== RUN   TestValidateBuildInformation/short
+=== RUN   TestValidateBuildInformation/long
+=== RUN   TestValidateBuildInformation/wrong_identity_prefix
+=== RUN   TestValidateBuildInformation/short_identity
+=== RUN   TestValidateBuildInformation/nonhex_identity
+=== RUN   TestValidateBuildInformation/custom
+=== RUN   TestValidateBuildInformation/runtime
+--- PASS: TestValidateBuildInformation (0.01s)
+    --- PASS: TestValidateBuildInformation/valid (0.00s)
+    --- PASS: TestValidateBuildInformation/base (0.00s)
+    --- PASS: TestValidateBuildInformation/short (0.00s)
+    --- PASS: TestValidateBuildInformation/long (0.00s)
+    --- PASS: TestValidateBuildInformation/wrong_identity_prefix (0.00s)
+    --- PASS: TestValidateBuildInformation/short_identity (0.00s)
+    --- PASS: TestValidateBuildInformation/nonhex_identity (0.00s)
+    --- PASS: TestValidateBuildInformation/custom (0.00s)
+    --- PASS: TestValidateBuildInformation/runtime (0.00s)
+=== RUN   TestLocalCertificateRouteIsRegisteredAndChecksPermission
+--- PASS: TestLocalCertificateRouteIsRegisteredAndChecksPermission (0.00s)
+=== RUN   TestClientProxyStreamingBeforeCompletion
+--- PASS: TestClientProxyStreamingBeforeCompletion (0.07s)
+=== RUN   TestClientProxyBrowserFixture
+    client_proxy_test.go:76: local browser fixture not requested
+--- SKIP: TestClientProxyBrowserFixture (0.00s)
+=== RUN   TestClientProxyWebsocketUpgradeCloses
+--- PASS: TestClientProxyWebsocketUpgradeCloses (0.00s)
+=== RUN   TestClientProxyHTTPSStillValidatesCertificates
+2026/11/05 16:42:57 http: TLS handshake error from 127.0.0.1:56758: remote error: tls: bad certificate
+--- PASS: TestClientProxyHTTPSStillValidatesCertificates (0.04s)
+=== RUN   TestClientProxyAuthAndOrigin
+--- PASS: TestClientProxyAuthAndOrigin (0.00s)
+=== RUN   TestClientProxyConnectStreamsAndCloses
+--- PASS: TestClientProxyConnectStreamsAndCloses (0.00s)
+=== RUN   TestClientProxyHTTPAndNativeDownload
+--- PASS: TestClientProxyHTTPAndNativeDownload (0.00s)
+=== RUN   TestHTTPSCertificateFailureNeverCreatesListener
+=== RUN   TestHTTPSCertificateFailureNeverCreatesListener/context_deadline_exceeded
+=== RUN   TestHTTPSCertificateFailureNeverCreatesListener/zero_serverNoiseKey
+--- PASS: TestHTTPSCertificateFailureNeverCreatesListener (0.00s)
+    --- PASS: TestHTTPSCertificateFailureNeverCreatesListener/context_deadline_exceeded (0.00s)
+    --- PASS: TestHTTPSCertificateFailureNeverCreatesListener/zero_serverNoiseKey (0.00s)
+=== RUN   TestHTTPSListenerFailureAndCancellation
+--- PASS: TestHTTPSListenerFailureAndCancellation (0.00s)
+=== RUN   TestHTTPSCertificateThenListenerAndProxy
+--- PASS: TestHTTPSCertificateThenListenerAndProxy (0.01s)
+=== RUN   TestRequireRegisteredMode
+--- PASS: TestRequireRegisteredMode (0.00s)
+=== RUN   TestRequireRegisteredRejectsMissingAndEmptyState
+--- PASS: TestRequireRegisteredRejectsMissingAndEmptyState (0.03s)
+=== RUN   TestRegistrationGuardDoesNotChangeOrdinaryStartupEnvironment
+--- PASS: TestRegistrationGuardDoesNotChangeOrdinaryStartupEnvironment (0.00s)
+=== RUN   TestProxyPreservesAuthenticationAndOrigin
+--- PASS: TestProxyPreservesAuthenticationAndOrigin (0.00s)
+=== RUN   TestProxyFlushesStreamingEvents
+--- PASS: TestProxyFlushesStreamingEvents (0.00s)
+=== RUN   TestProxyWebsocketUpgradeAndBytes
+--- PASS: TestProxyWebsocketUpgradeAndBytes (0.00s)
+=== RUN   TestHTTPSVerificationChecksTrustAndDoesNotRedirect
+2026/11/05 16:42:57 http: TLS handshake error from 127.0.0.1:41030: remote error: tls: bad certificate
+--- PASS: TestHTTPSVerificationChecksTrustAndDoesNotRedirect (0.12s)
+=== RUN   TestHTTPSVerificationHTTPFailureAndGuard
+--- PASS: TestHTTPSVerificationHTTPFailureAndGuard (0.01s)
+PASS

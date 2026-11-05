@@ -1,0 +1,159 @@
+{
+  "cases": [
+    {
+      "case": "help",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": null,
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "unknown-flag",
+      "exitCode": 2,
+      "expectedExitCode": 2,
+      "outputType": null,
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "relative-state-dir",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "outputType": "status",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "wrong-final-name",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "outputType": "status",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "special-exec-safe-rejection",
+      "exitCode": 2,
+      "expectedExitCode": 2,
+      "outputType": null,
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "check-valid-state",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": "args-check",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "check-client-logout-preserves-state",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": "args-check",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "private-malformed-bool",
+      "exitCode": 2,
+      "expectedExitCode": 2,
+      "outputType": null,
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "private-unknown-flag",
+      "exitCode": 2,
+      "expectedExitCode": 2,
+      "outputType": null,
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "private-positional",
+      "exitCode": 2,
+      "expectedExitCode": 2,
+      "outputType": null,
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "help-after-private-value",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": null,
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "diagnose-direct",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": "argv-diagnostic",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "diagnose-injected-shape-host",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": "argv-diagnostic",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "diagnostic-word-is-hostname-value",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": "args-check",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "stamped-build-info",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": "build-info",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "build-info-word-is-hostname-value",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": "args-check",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "guarded-https-parse-only",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "outputType": "args-check",
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "unguarded-https-refused",
+      "exitCode": 2,
+      "expectedExitCode": 2,
+      "outputType": null,
+      "startingSeen": false,
+      "stateCreated": false
+    },
+    {
+      "case": "guarded-https-missing-state",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "outputType": "status",
+      "startingSeen": false,
+      "stateCreated": false
+    }
+  ],
+  "stateCreated": false,
+  "existingSyntheticStateUntouched": true,
+  "scope": "Linux host program in an external-network-free namespace; shared parsing and dispatch only. Not Android/Termux execution."
+}

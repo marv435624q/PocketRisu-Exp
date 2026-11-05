@@ -1,0 +1,19 @@
+=== RUN   TestRequireExistingRegistrationSkipsAuthKeyResolution
+--- PASS: TestRequireExistingRegistrationSkipsAuthKeyResolution (0.00s)
+=== RUN   TestRequireExistingRegistrationBlocksInteractiveLogin
+=== RUN   TestRequireExistingRegistrationBlocksInteractiveLogin/guarded_needs_login
+=== RUN   TestRequireExistingRegistrationBlocksInteractiveLogin/guarded_needs_login_forced
+=== RUN   TestRequireExistingRegistrationBlocksInteractiveLogin/guarded_running_forced
+=== RUN   TestRequireExistingRegistrationBlocksInteractiveLogin/guarded_starting_forced
+=== RUN   TestRequireExistingRegistrationBlocksInteractiveLogin/normal_needs_login
+=== RUN   TestRequireExistingRegistrationBlocksInteractiveLogin/normal_running_forced
+=== RUN   TestRequireExistingRegistrationBlocksInteractiveLogin/normal_running
+--- PASS: TestRequireExistingRegistrationBlocksInteractiveLogin (0.01s)
+    --- PASS: TestRequireExistingRegistrationBlocksInteractiveLogin/guarded_needs_login (0.00s)
+    --- PASS: TestRequireExistingRegistrationBlocksInteractiveLogin/guarded_needs_login_forced (0.00s)
+    --- PASS: TestRequireExistingRegistrationBlocksInteractiveLogin/guarded_running_forced (0.00s)
+    --- PASS: TestRequireExistingRegistrationBlocksInteractiveLogin/guarded_starting_forced (0.00s)
+    --- PASS: TestRequireExistingRegistrationBlocksInteractiveLogin/normal_needs_login (0.00s)
+    --- PASS: TestRequireExistingRegistrationBlocksInteractiveLogin/normal_running_forced (0.00s)
+    --- PASS: TestRequireExistingRegistrationBlocksInteractiveLogin/normal_running (0.00s)
+PASS

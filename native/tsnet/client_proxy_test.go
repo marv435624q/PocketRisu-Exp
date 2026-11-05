@@ -329,9 +329,13 @@ func TestClientProxyHTTPAndNativeDownload(t *testing.T) {
 	r.Header.Set("Proxy-Authorization", testAuth())
 	r.Header.Set("X-PocketRisu-Download", "http://phone.example.ts.net/file")
 	resp, err = client.Do(r)
-	if err != nil { t.Fatal(err) }
+	if err != nil {
+		t.Fatal(err)
+	}
 	resp.Body.Close()
-	if resp.StatusCode != 403 { t.Fatal("web request was allowed to change origin using the native download header") }
+	if resp.StatusCode != 403 {
+		t.Fatal("web request was allowed to change origin using the native download header")
+	}
 	for _, target := range []string{"http://phone.example.ts.net/file?q=download", "http://other.example.ts.net/file"} {
 		r, _ = http.NewRequest("GET", s.URL+"/native-download", nil)
 		r.Header.Set("Proxy-Authorization", testAuth())

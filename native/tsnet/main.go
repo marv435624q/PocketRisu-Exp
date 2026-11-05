@@ -103,6 +103,11 @@ func run() error {
 	}
 	stateDir, hostname := &options.stateDir, &options.hostname
 	logoutOnly, clientTarget := &options.logoutOnly, &options.clientTarget
+	if options.requireRegistered {
+		if err := requireExistingState(*stateDir); err != nil {
+			return err
+		}
+	}
 	if err := os.MkdirAll(*stateDir, 0700); err != nil {
 		return err
 	}
@@ -110,11 +115,9 @@ func run() error {
 		return err
 	}
 	// Authentication is always interactive; don't inherit keys from host shells.
-	for _, name := range []string{"TS_AUTHKEY", "TS_CLIENT_SECRET", "TS_CONTROL_URL"} {
-		_ = os.Unsetenv(name)
-	}
+	clearInheritedTailscaleAuth(options.requireRegistered)
 	_ = os.Setenv("TS_NO_LOGS_NO_SUPPORT", "true")
-	srv := &tsnet.Server{Dir: *stateDir, Hostname: *hostname,
+	srv := &tsnet.Server{Dir: *stateDir, Hostname: *hostname, RequireExistingRegistration: options.requireRegistered,
 		Logf: func(string, ...any) {}, UserLogf: func(string, ...any) {}}
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
@@ -201,6 +204,9 @@ func run() error {
 	for {
 		if ctx.Err() != nil {
 			emit(snapshot{Status: "off"})
+			if options.verifyHTTPS {
+				return errors.New("HTTPS verification canceled before success")
+			}
 			return nil
 		}
 		pollCtx, done := context.WithTimeout(ctx, 5*time.Second)
@@ -215,6 +221,9 @@ func run() error {
 			}
 			switch st.BackendState {
 			case "NeedsLogin":
+				if err := allowInteractiveLogin(options.requireRegistered); err != nil {
+					return err
+				}
 				s.Status = "needs-login"
 				s.AuthURL = st.AuthURL
 				if !loginRequested {
@@ -239,35 +248,43 @@ func run() error {
 						lastError = "Enable MagicDNS and HTTPS certificates in the Tailnet DNS settings"
 					} else {
 						domain := strings.TrimSuffix(st.CertDomains[0], ".")
-						certCtx, finish := context.WithTimeout(ctx, 30*time.Second)
-						_, _, certErr := lc.CertPair(certCtx, domain)
-						finish()
-						lastError = safeError(certErr)
-						if certErr == nil {
-							ln, listenErr := srv.ListenTLS("tcp", ":443")
-							lastError = safeError(listenErr)
-							if listenErr == nil {
-								target, _ := url.Parse("http://127.0.0.1:6001")
-								httpServer = &http.Server{Handler: newProxy(target), ReadHeaderTimeout: 15 * time.Second,
-									IdleTimeout: 90 * time.Second, ErrorLog: log.New(io.Discard, "", 0)}
-								proxyURL = "https://" + domain
-								server := httpServer
-								go func() {
-									if serveErr := server.Serve(ln); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) && ctx.Err() == nil {
-										emit(snapshot{Status: "error", Registered: boolValue(true), Error: safeError(serveErr)})
-										cancel()
-									}
-								}()
-							}
+						ln, listenErr := obtainHTTPSListener(ctx, domain, lc.CertPair, srv.ListenTLS)
+						lastError = safeError(listenErr)
+						if listenErr == nil {
+							target, _ := url.Parse("http://127.0.0.1:6001")
+							httpServer = &http.Server{Handler: newProxy(target), ReadHeaderTimeout: 15 * time.Second,
+								IdleTimeout: 90 * time.Second, ErrorLog: log.New(io.Discard, "", 0)}
+							proxyURL = "https://" + domain
+							server := httpServer
+							go func() {
+								if serveErr := server.Serve(ln); serveErr != nil && !errors.Is(serveErr, http.ErrServerClosed) && ctx.Err() == nil {
+									emit(snapshot{Status: "error", Registered: boolValue(true), Error: safeError(serveErr)})
+									cancel()
+								}
+							}()
 						}
 					}
 				}
 				if httpServer != nil {
 					s.Status = "running"
 					s.URL = proxyURL
+					if options.verifyHTTPS {
+						probeCtx, finish := context.WithTimeout(ctx, 15*time.Second)
+						result := verifyHTTPS(probeCtx, strings.TrimPrefix(proxyURL, "https://"), srv.Dial, nil)
+						finish()
+						_ = json.NewEncoder(os.Stdout).Encode(result)
+						if !result.Success {
+							return errors.New("HTTPS verification failed")
+						}
+						return nil
+					}
 				} else {
 					s.Status = "https-error"
 					s.Error = lastError
+					if options.verifyHTTPS {
+						emit(s)
+						return errors.New("HTTPS certificate or listener verification failed")
+					}
 				}
 			default:
 				s.Status = "reconnecting"
@@ -285,6 +302,17 @@ func main() {
 	rawArgs := os.Args
 	args, diagnostic := normalizeStartupArgs(rawArgs, runtime.GOOS == "android", os.Getenv("TERMUX_EXEC__PROC_SELF_EXE"))
 	os.Args = args
+	if len(args) == 2 && args[1] == "--build-info" {
+		info, err := currentBuildInformation()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "candidate build identity unavailable")
+			os.Exit(1)
+		}
+		if err := json.NewEncoder(os.Stdout).Encode(info); err != nil {
+			os.Exit(1)
+		}
+		return
+	}
 	if diagnosticRequested(rawArgs) {
 		if err := json.NewEncoder(os.Stdout).Encode(diagnostic); err != nil {
 			os.Exit(1)

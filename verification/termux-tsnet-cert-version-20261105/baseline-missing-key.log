@@ -1,0 +1,4 @@
+=== RUN   TestSetDNSLoadsAndCachesMissingServerNoiseKey
+    direct_noise_key_test.go:88: zero serverNoiseKey
+--- FAIL: TestSetDNSLoadsAndCachesMissingServerNoiseKey (0.01s)
+FAIL

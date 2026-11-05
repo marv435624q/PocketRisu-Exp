@@ -1,0 +1,39 @@
+{
+  "binary": {
+    "path": "prebuilt/termux/arm64/tsnet-v1.104.5-cert1/libpocketrisu_tsnet_exec.so",
+    "bytes": 21889318,
+    "sha256": "9e1e30367c8a361b92b38e0085f6bb67492d4e4b5b4be915fc6a887e8b65c5bb"
+  },
+  "identity": {
+    "candidate": "tsnet-v1.104.5-cert1",
+    "baseVersion": "1.104.5",
+    "sourceId": "0db6aff6de9fc04413fef2af30ecfaeeb0c3028132c0d0a79c6a1e0eaa065c35",
+    "longVersion": "1.104.5-pocketrisu-exp-cert1-s0db6aff6de9f"
+  },
+  "elf": {
+    "elfType": 3,
+    "interpreter": "/system/bin/linker64",
+    "neededCount": 0,
+    "needed": [],
+    "loadAlignment": [
+      65536,
+      65536,
+      65536,
+      65536
+    ]
+  },
+  "sourceArchiveFiles": 3052,
+  "sourceInputs": 3030,
+  "binaryPatternScanCounts": {
+    "private_key_material": 0,
+    "tailscale_auth_key": 0,
+    "tailscale_api_key": 0,
+    "github_token": 0,
+    "private_windows_path": 0,
+    "private_linux_path": 0
+  },
+  "baselineBinariesAndProxyAndACMEAndArgNormalizationUnchanged": true,
+  "sourceArchiveAndPerFileManifestAndFingerprintMatch": true,
+  "exactSourceRestoreAcceptsExistingVendor": true,
+  "limit": "Static source/build/ELF checks only. Pattern scan is not a proof that all secrets are absent. New Android binary not executed."
+}

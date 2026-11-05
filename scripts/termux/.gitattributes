@@ -2,3 +2,7 @@ build-tsnet-candidate.sh text eol=lf
 test-tsnet-args.sh text eol=lf
 prepare-tsnet-source.py text eol=lf
 .gitattributes text eol=lf
+tsnet-build-flags.py text eol=lf
+verify-tsnet-cert1.py text eol=lf
+test_verify_tsnet_cert1.py text eol=lf
+test-tsnet-host-cli.py text eol=lf

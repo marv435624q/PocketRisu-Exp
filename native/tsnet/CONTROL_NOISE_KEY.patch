@@ -1,0 +1,91 @@
+--- a/control/controlclient/direct.go
++++ b/control/controlclient/direct.go
+@@ -105,8 +105,9 @@
+ 	discoPubKey     key.DiscoPublic // protected by mu; can be updated via [SetDiscoPublicKey]
+ 	ipForwardBroken bool            // protected by mu; can be updated via [SetIPForwardingBroken]
+ 
+-	sfGroup     singleflight.Group[struct{}, *ts2021.Client] // protects noiseClient creation.
+-	noiseClient *ts2021.Client                               // also protected by mu
++	sfGroup        singleflight.Group[struct{}, *ts2021.Client] // protects noiseClient creation.
++	serverKeyGroup singleflight.Group[struct{}, struct{}]       // coalesces lazy server key fetches.
++	noiseClient    *ts2021.Client                               // also protected by mu
+ 
+ 	persist                 persist.PersistView
+ 	authKey                 string
+@@ -1753,9 +1754,76 @@
+ 	return nc, nil
+ }
+ 
++// ensureServerNoiseKey obtains a missing server public key through the same
++// authenticated HTTPS key endpoint used by login. Running backend state alone
++// does not guarantee this Direct instance has finished login initialization.
++func (c *Direct) ensureServerNoiseKey(ctx context.Context) error {
++	if err := ctx.Err(); err != nil {
++		return err
++	}
++	if err := c.closedCtx.Err(); err != nil {
++		return err
++	}
++	c.mu.Lock()
++	ready := !c.serverNoiseKey.IsZero()
++	c.mu.Unlock()
++	if ready {
++		return nil
++	}
++
++	result := c.serverKeyGroup.DoChanContext(ctx, struct{}{}, func(fetchCtx context.Context) (struct{}, error) {
++		fetchCtx, cancel := context.WithCancel(fetchCtx)
++		defer cancel()
++		stop := context.AfterFunc(c.closedCtx, cancel)
++		defer stop()
++		c.mu.Lock()
++		ready := !c.serverNoiseKey.IsZero()
++		c.mu.Unlock()
++		if err := c.closedCtx.Err(); err != nil {
++			return struct{}{}, err
++		}
++		if err := fetchCtx.Err(); err != nil {
++			return struct{}{}, err
++		}
++		if ready {
++			return struct{}{}, nil
++		}
++		keys, err := loadServerPubKeys(fetchCtx, c.httpc, c.serverURL)
++		if err != nil {
++			return struct{}{}, err
++		}
++		if keys.PublicKey.IsZero() {
++			return struct{}{}, errors.New("control server is too old; no noise key")
++		}
++		c.mu.Lock()
++		defer c.mu.Unlock()
++		if err := c.closedCtx.Err(); err != nil {
++			return struct{}{}, err
++		}
++		if err := fetchCtx.Err(); err != nil {
++			return struct{}{}, err
++		}
++		if c.serverNoiseKey.IsZero() {
++			c.serverNoiseKey = keys.PublicKey
++		}
++		return struct{}{}, nil
++	})
++	res := <-result
++	if err := ctx.Err(); err != nil {
++		return err
++	}
++	if err := c.closedCtx.Err(); err != nil {
++		return err
++	}
++	return res.Err
++}
++
+ // setDNSNoise sends the SetDNSRequest request to the control plane server over Noise,
+ // requesting a DNS record be created or updated.
+ func (c *Direct) setDNSNoise(ctx context.Context, req *tailcfg.SetDNSRequest) error {
++	if err := c.ensureServerNoiseKey(ctx); err != nil {
++		return err
++	}
+ 	newReq := *req
+ 	newReq.Version = tailcfg.CurrentCapabilityVersion
+ 	nc, err := c.getNoiseClient()

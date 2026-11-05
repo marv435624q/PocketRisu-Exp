@@ -1,0 +1,15 @@
+{
+  "raceTests": {
+    "sidecar-race": 24,
+    "control-race": 7,
+    "tsnet-guard-race": 2
+  },
+  "hostCliCases": 19,
+  "verifierMockedUnitTests": 6,
+  "externalNetwork": false,
+  "network": "loopback only, no IPv4 or IPv6 default route",
+  "newCandidateAndroidExecuted": false,
+  "realACME": false,
+  "realTailnetHTTPS": false,
+  "reusedEvidence": "Control race executable identical by SHA-256; vendor production/test source hashes unchanged. Guard/Python tests retained from unchanged sources."
+}

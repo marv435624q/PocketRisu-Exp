@@ -17,7 +17,7 @@ import (
 func TestLocalCertificateRouteIsRegisteredAndChecksPermission(t *testing.T) {
 	handler := localapi.NewHandler(localapi.HandlerConfig{
 		Backend: &ipnlocal.LocalBackend{},
-		Logf: func(string, ...any) {},
+		Logf:    func(string, ...any) {},
 	})
 	request := httptest.NewRequest(http.MethodGet,
 		"http://local-tailscaled.sock/localapi/v0/cert/pocketrisu.example.ts.net?type=pair", nil)

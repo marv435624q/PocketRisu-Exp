@@ -1,0 +1,74 @@
+--- a/tsnet/tsnet.go
++++ b/tsnet/tsnet.go
+@@ -261,6 +261,12 @@
+ 	// as an Ephemeral node (https://tailscale.com/s/ephemeral-nodes).
+ 	Ephemeral bool
+ 
++	// RequireExistingRegistration disables auth-key resolution and interactive
++	// login for callers that must reuse an existing registered identity.
++	// A NeedsLogin state causes Start to fail. The default retains normal tsnet
++	// behavior, including TSNET_FORCE_LOGIN.
++	RequireExistingRegistration bool
++
+ 	// AuthKey, if non-empty, is the auth key to create the node
+ 	// and will be preferred over the TS_AUTHKEY environment
+ 	// variable. If the node is already created (from state
+@@ -994,7 +1000,7 @@
+ 	prefs.ControlURL = s.getControlURL()
+ 	prefs.RunWebClient = s.RunWebClient
+ 	prefs.AdvertiseTags = s.AdvertiseTags
+-	authKey, err := s.resolveAuthKey()
++	authKey, err := resolveStartAuthKey(s.RequireExistingRegistration, s.resolveAuthKey)
+ 	if err != nil {
+ 		return fmt.Errorf("error resolving auth key: %w", err)
+ 	}
+@@ -1006,12 +1012,14 @@
+ 		return fmt.Errorf("starting backend: %w", err)
+ 	}
+ 	st := lb.State()
+-	if st == ipn.NeedsLogin || envknob.Bool("TSNET_FORCE_LOGIN") {
++	startedLogin, err := startLoginIfNeeded(s.RequireExistingRegistration, st, envknob.Bool("TSNET_FORCE_LOGIN"), func() error {
+ 		s.logf("LocalBackend state is %v; running StartLoginInteractive...", st)
+-		if err := s.lb.StartLoginInteractive(s.shutdownCtx); err != nil {
+-			return fmt.Errorf("StartLoginInteractive: %w", err)
+-		}
+-	} else if authKey != "" {
++		return s.lb.StartLoginInteractive(s.shutdownCtx)
++	})
++	if err != nil {
++		return err
++	}
++	if !startedLogin && authKey != "" {
+ 		s.logf("Authkey is set; but state is %v. Ignoring authkey. Re-run with TSNET_FORCE_LOGIN=1 to force use of authkey.", st)
+ 	}
+ 	go s.printAuthURLLoop()
+@@ -1041,6 +1049,29 @@
+ 	}()
+ 	closePool.add(s.localAPIListener)
+ 	return nil
++}
++
++func resolveStartAuthKey(requireExisting bool, resolve func() (string, error)) (string, error) {
++	if requireExisting {
++		return "", nil
++	}
++	return resolve()
++}
++
++func startLoginIfNeeded(requireExisting bool, state ipn.State, force bool, login func() error) (bool, error) {
++	if requireExisting {
++		if state == ipn.NeedsLogin {
++			return false, errors.New("existing Tailscale registration required; interactive login disabled")
++		}
++		return false, nil
++	}
++	if state == ipn.NeedsLogin || force {
++		if err := login(); err != nil {
++			return false, fmt.Errorf("StartLoginInteractive: %w", err)
++		}
++		return true, nil
++	}
++	return false, nil
+ }
+ 
+ func (s *Server) resolveAuthKey() (string, error) {

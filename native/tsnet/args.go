@@ -13,6 +13,8 @@ import (
 type runtimeOptions struct {
 	stateDir, hostname, clientTarget string
 	logoutOnly, checkArgs            bool
+	requireRegistered                bool
+	verifyHTTPS                      bool
 }
 
 var errArgumentParsing = errors.New("invalid command-line arguments")
@@ -22,11 +24,17 @@ func parseRuntimeOptions(args []string, output io.Writer) (runtimeOptions, error
 	fs := flag.NewFlagSet("pocketrisu-tsnet", flag.ContinueOnError)
 	var parserOutput bytes.Buffer
 	fs.SetOutput(&parserOutput)
+	fs.Usage = func() {
+		_, _ = fmt.Fprintln(fs.Output(), "Standalone: --diagnose-argv | --build-info")
+		fs.PrintDefaults()
+	}
 	fs.StringVar(&opts.stateDir, "state-dir", "", "private, persistent Tailscale state directory")
 	fs.StringVar(&opts.hostname, "hostname", "pocketrisu", "tailnet device hostname")
 	fs.BoolVar(&opts.logoutOnly, "logout-only", false, "log out and explicitly reset this device identity")
 	fs.StringVar(&opts.clientTarget, "client-target", "", "client's configured tailnet host:port; no server publishing")
 	fs.BoolVar(&opts.checkArgs, "check-args", false, "validate arguments without starting Tailscale")
+	fs.BoolVar(&opts.requireRegistered, "require-registered", false, "reuse an existing registration; refuse interactive login")
+	fs.BoolVar(&opts.verifyHTTPS, "verify-https", false, "verify this server's HTTPS over tsnet and stop; requires an existing registration")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
 			_, _ = io.Copy(output, &parserOutput)
@@ -39,6 +47,10 @@ func parseRuntimeOptions(args []string, output io.Writer) (runtimeOptions, error
 	}
 	if fs.NArg() != 0 {
 		_, _ = fmt.Fprintln(output, "unexpected positional argument; use --help for supported options")
+		return opts, errArgumentParsing
+	}
+	if opts.verifyHTTPS && (!opts.requireRegistered || opts.logoutOnly || opts.clientTarget != "") {
+		_, _ = fmt.Fprintln(output, "verify-https requires require-registered and server mode")
 		return opts, errArgumentParsing
 	}
 	if !filepath.IsAbs(opts.stateDir) || filepath.Base(filepath.Clean(opts.stateDir)) != "tailscale-state" {
