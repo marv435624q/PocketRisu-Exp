@@ -43,6 +43,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          export POCKETRISU_TSNET_TEST_DIR="$RUNNER_TEMP/pocketrisu-tsnet-tests"
+          mkdir -p "$POCKETRISU_TSNET_TEST_DIR"
           cd native/tsnet
           GOTOOLCHAIN=local GOWORK=off go mod verify
           GOTOOLCHAIN=local GOWORK=off go test -race ./...
