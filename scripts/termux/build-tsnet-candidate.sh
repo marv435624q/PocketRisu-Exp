@@ -7,7 +7,7 @@ GO="${POCKETRISU_GO_BIN:-$(command -v go || true)}"
 [[ -x "$GO" ]] || { echo 'Go 1.27.3 is required'; exit 2; }
 [[ "$("$GO" version)" == 'go version go1.27.3 '* ]] || { echo 'Pinned compiler is Go 1.27.3'; exit 2; }
 python3 "$ROOT/scripts/termux/prepare-tsnet-source.py"
-OUTPUT="$SOURCE/output/tsnet-v1.104.5-cert3-$(date -u +%Y%m%dT%H%M%SZ)-$RANDOM"
+OUTPUT="$SOURCE/output/tsnet-v1.104.5-cert4-$(date -u +%Y%m%dT%H%M%SZ)-$RANDOM"
 mkdir -p "$SOURCE/output"
 mkdir "$OUTPUT"
 mkdir "$OUTPUT/go-tmp"
