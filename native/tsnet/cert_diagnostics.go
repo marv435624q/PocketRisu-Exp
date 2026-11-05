@@ -22,6 +22,7 @@ var allowedCertStages = map[string]bool{
 	"set-dns": true,
 	"noise-key": true,
 	"noise-client": true,
+	"fresh-noise-client": true,
 	"set-dns-post": true,
 	"set-dns-response": true,
 	"noise-dial-80": true,
@@ -39,6 +40,7 @@ var allowedCertStages = map[string]bool{
 var unprefixedControlCertStages = map[string]bool{
 	"noise-key": true,
 	"noise-client": true,
+	"fresh-noise-client": true,
 	"set-dns-post": true,
 	"set-dns-response": true,
 	"noise-dial-80": true,
