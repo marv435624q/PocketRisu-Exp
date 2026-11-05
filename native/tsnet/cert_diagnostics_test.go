@@ -39,6 +39,9 @@ func TestCertProgressTrackerEmitsOnlyStructuredAllowlist(t *testing.T) {
 	tracker.Logf(`control: pocketrisu-cert-stage: noise-key start`, "private-arg")
 	now = base.Add(1750 * time.Millisecond)
 	tracker.Logf(`control: pocketrisu-cert-stage: noise-key done`, "private-arg")
+	tracker.Logf(`control: pocketrisu-cert-stage: fresh-noise-client start`, "private-arg")
+	now = base.Add(1875 * time.Millisecond)
+	tracker.Logf(`control: pocketrisu-cert-stage: fresh-noise-client done`, "private-arg")
 	tracker.Logf(`control: pocketrisu-cert-stage: noise-upgrade-443 start`, "private-arg")
 	now = base.Add(2000 * time.Millisecond)
 	tracker.Logf(`control: pocketrisu-cert-stage: noise-upgrade-443 done`, "private-arg")
@@ -46,12 +49,14 @@ func TestCertProgressTrackerEmitsOnlyStructuredAllowlist(t *testing.T) {
 	tracker.End()
 	tracker.Logf(`control: pocketrisu-cert-stage: noise-client start`, "private-arg")
 	tracker.Logf(`acme: cert("target.example"): pocketrisu-cert-stage: certificate start`, "private-arg")
-	if len(got) != 6 || got[0].Stage != "order" || got[0].ElapsedMS != 0 ||
+	if len(got) != 8 || got[0].Stage != "order" || got[0].ElapsedMS != 0 ||
 		got[1].State != "done" || got[1].ElapsedMS != 1250 ||
 		got[2].Stage != "noise-key" || got[2].State != "start" ||
 		got[3].Stage != "noise-key" || got[3].ElapsedMS != 500 ||
-		got[4].Stage != "noise-upgrade-443" || got[4].State != "start" ||
-		got[5].Stage != "noise-upgrade-443" || got[5].ElapsedMS != 250 {
+		got[4].Stage != "fresh-noise-client" || got[4].State != "start" ||
+		got[5].Stage != "fresh-noise-client" || got[5].ElapsedMS != 125 ||
+		got[6].Stage != "noise-upgrade-443" || got[6].State != "start" ||
+		got[7].Stage != "noise-upgrade-443" || got[7].ElapsedMS != 125 {
 		t.Fatalf("unexpected progress: %#v", got)
 	}
 }
