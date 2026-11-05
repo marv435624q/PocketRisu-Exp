@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "candidate": "tsnet-v1.104.5-cert5",
+  "baseCandidate": "tsnet-v1.104.5-cert4",
+  "baseCommit": "6fa8d236b1b28773a456527186b3b6784c47c57c",
+  "baseSourceRecord": "native/tsnet/SOURCE.json",
+  "experiment": {
+    "change": "SetDNS uses a fresh one-shot ts2021 Noise client instead of the shared map-stream client",
+    "scope": "SetDNS only",
+    "sharedNoiseClientUnchanged": true,
+    "oneShotClosedAfterRequest": true
+  },
+  "diagnostics": {
+    "controlStages": [
+      "noise-key",
+      "fresh-noise-client",
+      "set-dns-post",
+      "set-dns-response"
+    ],
+    "noiseTransportStages": [
+      "noise-dial-80",
+      "noise-dial-443",
+      "noise-upgrade-80",
+      "noise-upgrade-443",
+      "noise-handshake-80",
+      "noise-handshake-443",
+      "noise-h2-request"
+    ],
+    "verifyHTTPSMaxPreparationAttempts": 2
+  },
+  "privacy": "Only allowlisted stage/state/elapsed values are emitted; no host, IP, URL, domain, DNS TXT, keys, request body, account or state contents."
+}
