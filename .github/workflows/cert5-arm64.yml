@@ -4,7 +4,7 @@ name: cert5 ARM64 diagnostic candidate
 on:
   push:
     branches:
-      - fix/termux-tsnet-cert5-diagnostics-20261106
+      - fix/termux-tsnet-cert5-fresh-setdns-20261106
     paths:
       - '.github/workflows/cert5-arm64.yml'
 
