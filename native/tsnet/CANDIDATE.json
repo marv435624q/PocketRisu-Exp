@@ -1,9 +1,9 @@
 {
-  "candidate": "tsnet-v1.104.5-cert3",
+  "candidate": "tsnet-v1.104.5-cert4",
   "tailscaleVersion": "1.104.5",
   "goVersion": "1.27.3",
   "upstreamRepository": "https://github.com/tailscale/tailscale",
   "upstreamCommit": "73a48057aaf5f60e4f770b398e9b7af576b01dbe",
-  "baseCandidate": "tsnet-v1.104.5-cert2",
-  "baseCommit": "6d13f8955113469e215aaff6c3ebd4e0b6c5e38a"
+  "baseCandidate": "tsnet-v1.104.5-cert3",
+  "baseCommit": "1c8f76e0fcc18b763e8217c444747cd36daa68a7"
 }
