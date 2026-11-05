@@ -21,7 +21,6 @@ HEX = re.compile(r"^[0-9a-f]{64}$")
 STATUSES = {"off", "connecting", "reconnecting", "needs-login", "needs-approval", "running", "https-error", "error"}
 BACKENDS = {"NoState", "InUseOtherUser", "NeedsLogin", "NeedsMachineAuth", "Stopped", "Starting", "Running"}
 HTTPS_ERRORS = {"request", "certificate", "deadline", "https-request", "http-response"}
-HTTPS_STAGES = {"prerequisites", "certificate", "post-certificate", "listener"}
 
 
 def child_environment():
@@ -48,9 +47,6 @@ def sanitized_status(obj):
         return None
     row = {"status": status, "backendState": backend if isinstance(backend, str) and backend in BACKENDS else None,
            "registered": registered if type(registered) is bool else None}
-    stage = obj.get("httpsStage")
-    if isinstance(stage, str) and stage in HTTPS_STAGES:
-        row["httpsStage"] = stage
     if obj.get("error"):
         row["errorCode"] = classify_error(obj["error"])
     return row

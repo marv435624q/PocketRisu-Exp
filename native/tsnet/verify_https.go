@@ -16,6 +16,7 @@ type httpsVerification struct {
 	TLSVerified bool   `json:"tlsVerified"`
 	HTTPStatus  int    `json:"httpStatus"`
 	ErrorCode   string `json:"errorCode,omitempty"`
+	NetworkClass string `json:"networkClass,omitempty"`
 }
 
 // Probe the already listening server through tsnet's dialer. Production roots
@@ -37,6 +38,7 @@ func verifyHTTPS(ctx context.Context, domain string,
 	}
 	res, err := client.Do(req)
 	if err != nil {
+		result.NetworkClass = networkErrorClass(err)
 		var unknownAuthority x509.UnknownAuthorityError
 		var hostnameError x509.HostnameError
 		var invalidCertificate x509.CertificateInvalidError

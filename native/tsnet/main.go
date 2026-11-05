@@ -43,6 +43,7 @@ type snapshot struct {
 	LogoutComplete bool     `json:"logoutComplete,omitempty"`
 	ProxyPort      int      `json:"proxyPort,omitempty"`
 	HTTPSStage     string   `json:"httpsStage,omitempty"`
+	NetworkClass   string   `json:"networkClass,omitempty"`
 }
 
 func boolValue(v bool) *bool { return &v }
@@ -62,6 +63,12 @@ func emit(s snapshot) {
 	outputMu.Lock()
 	defer outputMu.Unlock()
 	_ = json.NewEncoder(os.Stdout).Encode(s)
+}
+
+func emitHTTPSProgress(p httpsProgress) {
+	outputMu.Lock()
+	defer outputMu.Unlock()
+	_ = json.NewEncoder(os.Stdout).Encode(p)
 }
 
 // Preserve cookies, Origin, risu-auth, Authorization and websocket upgrades.
@@ -118,8 +125,12 @@ func run() error {
 	// Authentication is always interactive; don't inherit keys from host shells.
 	clearInheritedTailscaleAuth(options.requireRegistered)
 	_ = os.Setenv("TS_NO_LOGS_NO_SUPPORT", "true")
+	serverLogf := func(string, ...any) {}
+	if options.verifyHTTPS {
+		serverLogf = newCertProgressTracker(emitHTTPSProgress).Logf
+	}
 	srv := &tsnet.Server{Dir: *stateDir, Hostname: *hostname, RequireExistingRegistration: options.requireRegistered,
-		Logf: func(string, ...any) {}, UserLogf: func(string, ...any) {}}
+		Logf: serverLogf, UserLogf: func(string, ...any) {}}
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 	var clientHTTP *http.Server
@@ -201,6 +212,8 @@ func run() error {
 	var retryTLS time.Time
 	lastError := ""
 	lastHTTPSStage := ""
+	lastNetworkClass := ""
+	verifyHTTPSFailures := 0
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -244,18 +257,23 @@ func run() error {
 					s.ProxyPort = clientPort
 					break
 				}
+				attemptedHTTPS := false
 				if httpServer == nil && !time.Now().Before(retryTLS) {
+					attemptedHTTPS = true
 					retryTLS = time.Now().Add(30 * time.Second)
 					if st.CurrentTailnet == nil || !st.CurrentTailnet.MagicDNSEnabled || len(st.CertDomains) == 0 {
 						lastHTTPSStage = "prerequisites"
+						lastNetworkClass = ""
 						lastError = "Enable MagicDNS and HTTPS certificates in the Tailnet DNS settings"
 					} else {
 						domain := strings.TrimSuffix(st.CertDomains[0], ".")
 						ln, listenErr := obtainHTTPSListener(ctx, domain, lc.CertPair, srv.ListenTLS)
 						lastHTTPSStage = httpsPreparationStage(listenErr)
+						lastNetworkClass = networkErrorClass(listenErr)
 						lastError = safeError(listenErr)
 						if listenErr == nil {
 							lastHTTPSStage = ""
+							lastNetworkClass = ""
 							target, _ := url.Parse("http://127.0.0.1:6001")
 							httpServer = &http.Server{Handler: newProxy(target), ReadHeaderTimeout: 15 * time.Second,
 								IdleTimeout: 90 * time.Second, ErrorLog: log.New(io.Discard, "", 0)}
@@ -269,6 +287,9 @@ func run() error {
 							}()
 						}
 					}
+				}
+				if options.verifyHTTPS && attemptedHTTPS && httpServer == nil {
+					verifyHTTPSFailures++
 				}
 				if httpServer != nil {
 					s.Status = "running"
@@ -287,9 +308,10 @@ func run() error {
 					s.Status = "https-error"
 					s.Error = lastError
 					s.HTTPSStage = lastHTTPSStage
-					if options.verifyHTTPS {
+					s.NetworkClass = lastNetworkClass
+					if options.verifyHTTPS && verifyHTTPSFailures >= 2 {
 						emit(s)
-						return errors.New("HTTPS certificate or listener verification failed")
+						return errors.New("HTTPS certificate or listener verification failed after bounded retry")
 					}
 				}
 			default:
