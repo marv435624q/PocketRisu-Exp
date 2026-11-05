@@ -29,6 +29,13 @@ The private Android repository is not required to retrieve this source archive.
 - Its README records the original standalone Go build command and its limits.
   No rebuild was performed for this distribution.
 
+An additional offline `go mod verify` did not complete: the module graph needed
+`github.com/akutz/memconn@v0.1.0` metadata that was not available in the cache,
+and `GOPROXY=off` prohibited fetching it (exit 1). No download was attempted;
+go.mod and go.sum remained unchanged. This is not a passing module-cache
+integrity check. The source archive checks establish file/hash consistency,
+not a rebuilt or independently verified complete build graph.
+
 The PocketRisu-Android application code is distributed under the repository's
 GPLv3 terms; its original license is preserved in
 `LICENSES/PocketRisu-Android-GPL-3.0.txt`. Tailscale and its dependencies retain

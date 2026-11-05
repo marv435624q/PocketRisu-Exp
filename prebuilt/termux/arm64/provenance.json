@@ -25,5 +25,11 @@
     "bytes": 81151418,
     "sha256": "f5a17e6896c1ba42f21f860a09614c29a21b48a9e2878eeee6fd42ccd0bdece7"
   },
-  "verification": "Static preparation only; no target execution or authentication."
+  "verification": "Static preparation only; no target execution or authentication.",
+  "offlineGoModVerify": {
+    "completed": false,
+    "exitCode": 1,
+    "reason": "Module graph metadata for github.com/akutz/memconn@v0.1.0 was unavailable with GOPROXY=off; no download was attempted.",
+    "goModAndGoSumUnchanged": true
+  }
 }
