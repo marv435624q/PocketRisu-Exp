@@ -24,6 +24,13 @@ var allowedCertStages = map[string]bool{
 	"noise-client": true,
 	"set-dns-post": true,
 	"set-dns-response": true,
+	"noise-dial-80": true,
+	"noise-dial-443": true,
+	"noise-upgrade-80": true,
+	"noise-upgrade-443": true,
+	"noise-handshake-80": true,
+	"noise-handshake-443": true,
+	"noise-h2-request": true,
 	"acme-accept": true,
 	"issuance-wait": true,
 	"certificate": true,
@@ -34,6 +41,13 @@ var unprefixedControlCertStages = map[string]bool{
 	"noise-client": true,
 	"set-dns-post": true,
 	"set-dns-response": true,
+	"noise-dial-80": true,
+	"noise-dial-443": true,
+	"noise-upgrade-80": true,
+	"noise-upgrade-443": true,
+	"noise-handshake-80": true,
+	"noise-handshake-443": true,
+	"noise-h2-request": true,
 }
 
 var allowedCertStageStates = map[string]bool{
