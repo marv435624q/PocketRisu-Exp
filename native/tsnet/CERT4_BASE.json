@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "candidate": "tsnet-v1.104.5-cert4",
+  "baseCandidate": "tsnet-v1.104.5-cert3",
+  "baseCommit": "1c8f76e0fcc18b763e8217c444747cd36daa68a7",
+  "baseSourceRecord": "native/tsnet/SOURCE.json",
+  "diagnostics": {
+    "acmeStages": [
+      "account",
+      "order",
+      "dns",
+      "dns-lookup",
+      "set-dns",
+      "acme-accept",
+      "issuance-wait",
+      "certificate"
+    ],
+    "controlStages": [
+      "noise-key",
+      "noise-client",
+      "set-dns-post",
+      "set-dns-response"
+    ],
+    "noiseTransportStages": [
+      "noise-dial-80",
+      "noise-dial-443",
+      "noise-upgrade-80",
+      "noise-upgrade-443",
+      "noise-handshake-80",
+      "noise-handshake-443",
+      "noise-h2-request"
+    ],
+    "httpsPreparationStages": [
+      "prerequisites",
+      "certificate",
+      "post-certificate",
+      "listener"
+    ],
+    "verifyHTTPSMaxPreparationAttempts": 2
+  },
+  "privacy": "Only allowlisted stage/state/elapsed values are emitted; no host, IP, URL, domain, DNS TXT, keys, request body, account or state contents."
+}
