@@ -29,13 +29,13 @@ type buildInformation struct {
 var sourceIDPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 
 func validateBuildInformation(info buildInformation) error {
-	if info.Type != "build-info" || info.Candidate != "tsnet-v1.104.5-cert2" || info.BaseVersion != "1.104.5" || info.ShortVersion != info.BaseVersion {
+	if info.Type != "build-info" || info.Candidate != "tsnet-v1.104.5-cert3" || info.BaseVersion != "1.104.5" || info.ShortVersion != info.BaseVersion {
 		return errors.New("candidate base version is inconsistent")
 	}
 	if !info.Custom || !sourceIDPattern.MatchString(info.SourceID) {
 		return errors.New("candidate source identity is missing or invalid")
 	}
-	if strings.Contains(info.LongVersion, "ERR-BuildInfo") || info.LongVersion != "1.104.5-pocketrisu-exp-cert2-s"+info.SourceID[:12] {
+	if strings.Contains(info.LongVersion, "ERR-BuildInfo") || info.LongVersion != "1.104.5-pocketrisu-exp-cert3-s"+info.SourceID[:12] {
 		return errors.New("candidate long version is missing or invalid")
 	}
 	if info.GoVersion == "" || info.GOOS == "" || info.GOARCH == "" {
@@ -46,7 +46,7 @@ func validateBuildInformation(info buildInformation) error {
 
 func currentBuildInformation() (buildInformation, error) {
 	info := buildInformation{
-		Type: "build-info", Candidate: "tsnet-v1.104.5-cert2", BaseVersion: strings.TrimSpace(tailscale.VersionDotTxt),
+		Type: "build-info", Candidate: "tsnet-v1.104.5-cert3", BaseVersion: strings.TrimSpace(tailscale.VersionDotTxt),
 		ShortVersion: version.Short(), LongVersion: version.Long(), SourceID: buildSourceID,
 		Custom: true, GoVersion: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH,
 	}
