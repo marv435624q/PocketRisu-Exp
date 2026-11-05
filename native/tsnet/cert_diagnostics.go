@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -35,14 +36,29 @@ type httpsProgress struct {
 }
 
 type certProgressTracker struct {
-	mu     sync.Mutex
-	starts map[string]time.Time
-	now    func() time.Time
-	emit   func(httpsProgress)
+	mu           sync.Mutex
+	starts       map[string]time.Time
+	targetPrefix string
+	now          func() time.Time
+	emit         func(httpsProgress)
 }
 
 func newCertProgressTracker(emit func(httpsProgress)) *certProgressTracker {
 	return &certProgressTracker{starts: map[string]time.Time{}, now: time.Now, emit: emit}
+}
+
+func (t *certProgressTracker) Begin(domain string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	clear(t.starts)
+	t.targetPrefix = "cert(" + strconv.Quote(strings.TrimSuffix(domain, ".")) + "): "
+}
+
+func (t *certProgressTracker) End() {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	clear(t.starts)
+	t.targetPrefix = ""
 }
 
 func parseCertStageLog(format string) (stage, state string, ok bool) {
@@ -62,12 +78,17 @@ func parseCertStageLog(format string) (stage, state string, ok bool) {
 // becomes structured output.
 func (t *certProgressTracker) Logf(format string, _ ...any) {
 	stage, state, ok := parseCertStageLog(format)
-	if !ok || t.emit == nil {
+	marker := strings.Index(format, certStageMarker)
+	if !ok || marker < 0 || t.emit == nil {
 		return
 	}
 	now := t.now()
 	var elapsed int64
 	t.mu.Lock()
+	if t.targetPrefix == "" || !strings.Contains(format[:marker], t.targetPrefix) {
+		t.mu.Unlock()
+		return
+	}
 	if state == "start" {
 		t.starts[stage] = now
 	} else if started, found := t.starts[stage]; found {

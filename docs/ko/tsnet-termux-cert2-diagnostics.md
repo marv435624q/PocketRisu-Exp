@@ -16,7 +16,7 @@ The opt-in `--verify-https` path now emits only structured allowlisted diagnosti
 - network class where an error exposes it: `dns`, `tcp`, `tls`, `timeout`, `other`
 - elapsed milliseconds, capped at 300000
 
-Tailscale's ACME source is derived deterministically from the pinned cert1 source archive. Five diagnostic-only log markers are inserted around the existing ACME calls. The sidecar parser never formats or forwards the logger arguments or prefixes, so certificate domains, order URLs, DNS TXT values, keys and account data are not copied into verifier results.
+Tailscale's ACME source is derived deterministically from the pinned cert1 source archive. Diagnostic-only markers are inserted around the existing ACME calls, but they are enabled only for the explicit cert2 verifier request, identified internally by `CertPairWithValidity(..., 1ns)`. The sidecar additionally accepts marker logs only while that request is active and only from the target certificate-domain log prefix. Background renewal for another domain therefore cannot contaminate the timing stream. The parser never formats or forwards logger arguments or prefixes, so certificate domains, order URLs, DNS TXT values, keys and account data are not copied into verifier results.
 
 ## Retry and exit handling
 

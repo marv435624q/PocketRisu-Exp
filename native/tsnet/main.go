@@ -126,8 +126,10 @@ func run() error {
 	clearInheritedTailscaleAuth(options.requireRegistered)
 	_ = os.Setenv("TS_NO_LOGS_NO_SUPPORT", "true")
 	serverLogf := func(string, ...any) {}
+	var certTracker *certProgressTracker
 	if options.verifyHTTPS {
-		serverLogf = newCertProgressTracker(emitHTTPSProgress).Logf
+		certTracker = newCertProgressTracker(emitHTTPSProgress)
+		serverLogf = certTracker.Logf
 	}
 	srv := &tsnet.Server{Dir: *stateDir, Hostname: *hostname, RequireExistingRegistration: options.requireRegistered,
 		Logf: serverLogf, UserLogf: func(string, ...any) {}}
@@ -267,7 +269,17 @@ func run() error {
 						lastError = "Enable MagicDNS and HTTPS certificates in the Tailnet DNS settings"
 					} else {
 						domain := strings.TrimSuffix(st.CertDomains[0], ".")
-						ln, listenErr := obtainHTTPSListener(ctx, domain, lc.CertPair, srv.ListenTLS)
+						certPair := lc.CertPair
+						if options.verifyHTTPS {
+							certPair = func(callCtx context.Context, name string) ([]byte, []byte, error) {
+								return lc.CertPairWithValidity(callCtx, name, time.Nanosecond)
+							}
+							certTracker.Begin(domain)
+						}
+						ln, listenErr := obtainHTTPSListener(ctx, domain, certPair, srv.ListenTLS)
+						if certTracker != nil {
+							certTracker.End()
+						}
 						lastHTTPSStage = httpsPreparationStage(listenErr)
 						lastNetworkClass = networkErrorClass(listenErr)
 						lastError = safeError(listenErr)

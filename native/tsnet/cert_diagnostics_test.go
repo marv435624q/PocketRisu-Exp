@@ -31,9 +31,13 @@ func TestCertProgressTrackerEmitsOnlyStructuredAllowlist(t *testing.T) {
 	var got []httpsProgress
 	tracker := newCertProgressTracker(func(p httpsProgress) { got = append(got, p) })
 	tracker.now = func() time.Time { return now }
-	tracker.Logf(`cert("private.example"): pocketrisu-cert-stage: order start`, "private-arg")
+	tracker.Begin("target.example")
+	tracker.Logf(`cert("other.example"): pocketrisu-cert-stage: order start`, "private-arg")
+	tracker.Logf(`acme: cert("target.example"): pocketrisu-cert-stage: order start`, "private-arg")
 	now = base.Add(1250 * time.Millisecond)
-	tracker.Logf(`cert("private.example"): pocketrisu-cert-stage: order done`, "private-arg")
+	tracker.Logf(`acme: cert("target.example"): pocketrisu-cert-stage: order done`, "private-arg")
+	tracker.End()
+	tracker.Logf(`acme: cert("target.example"): pocketrisu-cert-stage: certificate start`, "private-arg")
 	if len(got) != 2 || got[0].Stage != "order" || got[0].ElapsedMS != 0 ||
 		got[1].State != "done" || got[1].ElapsedMS != 1250 {
 		t.Fatalf("unexpected progress: %#v", got)

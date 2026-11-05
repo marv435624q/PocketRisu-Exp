@@ -19,56 +19,127 @@ def replace_once(text, old, new, label):
 def add_cert2_acme_markers(raw):
     text = raw.decode('utf-8')
     text = replace_once(text,
-        '\ta, err := e.ensureAccount(ctx, ac, logf, traceACME)\n\tif err != nil {\n\t\treturn nil, err\n\t}',
-        '\tlogf("pocketrisu-cert-stage: account start")\n'
         '\ta, err := e.ensureAccount(ctx, ac, logf, traceACME)\n'
-        '\tif err != nil {\n\t\tlogf("pocketrisu-cert-stage: account error")\n\t\treturn nil, err\n\t}\n'
-        '\tlogf("pocketrisu-cert-stage: account done")',
-        'account stage')
-    text = replace_once(text,
-        '\torder, err := ac.AuthorizeOrder(ctx, authzIDs, args.opts...)\n\tif err != nil {\n\t\treturn nil, err\n\t}',
-        '\targs.logf("pocketrisu-cert-stage: order start")\n'
-        '\torder, err := ac.AuthorizeOrder(ctx, authzIDs, args.opts...)\n'
-        '\tif err != nil {\n\t\targs.logf("pocketrisu-cert-stage: order error")\n\t\treturn nil, err\n\t}\n'
-        '\targs.logf("pocketrisu-cert-stage: order done")',
-        'order stage')
-    text = replace_once(text,
-        '\t\tcase acmeChallengeDNS01:\n\t\t\tif err := fulfillACMEDNS01Challenge(ctx, b, ac, az, args.logf, args.traceACME); err != nil {\n\t\t\t\treturn nil, err\n\t\t\t}',
-        '\t\tcase acmeChallengeDNS01:\n'
-        '\t\t\targs.logf("pocketrisu-cert-stage: dns start")\n'
-        '\t\t\tif err := fulfillACMEDNS01Challenge(ctx, b, ac, az, args.logf, args.traceACME); err != nil {\n'
-        '\t\t\t\targs.logf("pocketrisu-cert-stage: dns error")\n\t\t\t\treturn nil, err\n\t\t\t}\n'
-        '\t\t\targs.logf("pocketrisu-cert-stage: dns done")',
-        'dns stage')
-    text = replace_once(text,
-        '\torderURI := order.URI\n\torder, err = ac.WaitOrder(ctx, orderURI)\n\tif err != nil {\n'
-        '\t\tif ctx.Err() != nil {\n\t\t\treturn nil, ctx.Err()\n\t\t}\n'
-        '\t\tif oe, ok := err.(*xacme.OrderError); ok {\n'
-        '\t\t\targs.logf("acme: WaitOrder: OrderError status %q", oe.Status)\n'
-        '\t\t} else {\n\t\t\targs.logf("acme: WaitOrder error: %v", err)\n\t\t}\n'
-        '\t\treturn nil, err\n\t}\n\targs.traceACME(order)',
-        '\torderURI := order.URI\n'
-        '\targs.logf("pocketrisu-cert-stage: issuance-wait start")\n'
-        '\torder, err = ac.WaitOrder(ctx, orderURI)\n\tif err != nil {\n'
-        '\t\targs.logf("pocketrisu-cert-stage: issuance-wait error")\n'
-        '\t\tif ctx.Err() != nil {\n\t\t\treturn nil, ctx.Err()\n\t\t}\n'
-        '\t\tif oe, ok := err.(*xacme.OrderError); ok {\n'
-        '\t\t\targs.logf("acme: WaitOrder: OrderError status %q", oe.Status)\n'
-        '\t\t} else {\n\t\t\targs.logf("acme: WaitOrder error: %v", err)\n\t\t}\n'
+        '\tif err != nil {\n\t\treturn nil, err\n\t}\n'
+        '\tif a.Status != xacme.StatusValid {\n'
+        '\t\treturn nil, fmt.Errorf("unexpected ACME account status %q", a.Status)\n\t}',
+        '\tdiagnostic := minValidity == time.Nanosecond\n'
+        '\tcert2DiagnosticLog(logf, diagnostic, "account start")\n'
+        '\ta, err := e.ensureAccount(ctx, ac, logf, traceACME)\n'
+        '\tif err != nil {\n'
+        '\t\tcert2DiagnosticLog(logf, diagnostic, "account error")\n'
         '\t\treturn nil, err\n\t}\n'
-        '\targs.logf("pocketrisu-cert-stage: issuance-wait done")\n\targs.traceACME(order)',
-        'issuance wait stage')
+        '\tif a.Status != xacme.StatusValid {\n'
+        '\t\tcert2DiagnosticLog(logf, diagnostic, "account error")\n'
+        '\t\treturn nil, fmt.Errorf("unexpected ACME account status %q", a.Status)\n\t}\n'
+        '\tcert2DiagnosticLog(logf, diagnostic, "account done")',
+        'account stage')
+
     text = replace_once(text,
-        '\targs.logf("requesting cert...")\n\targs.traceACME(csr)\n'
+        '\tissueArgs := acmeCertIssueArgs{\n'
+        '\t\tcs:        cs,\n'
+        '\t\tlogf:      logf,\n'
+        '\t\ttraceACME: traceACME,\n'
+        '\t\tdomain:    domain,\n'
+        '\t\topts:      opts,\n'
+        '\t}',
+        '\tissueArgs := acmeCertIssueArgs{\n'
+        '\t\tcs:         cs,\n'
+        '\t\tlogf:       logf,\n'
+        '\t\ttraceACME:  traceACME,\n'
+        '\t\tdomain:     domain,\n'
+        '\t\topts:       opts,\n'
+        '\t\tdiagnostic: diagnostic,\n'
+        '\t}',
+        'diagnostic issue args')
+
+    text = replace_once(text,
+        '\tchallengeType acmeChallengeType   // challenge type to fulfill\n'
+        '}\n\n'
+        'func (args acmeCertIssueArgs) baseDomain() string { return strings.TrimPrefix(args.domain, "*.") }\n'
+        'func (args acmeCertIssueArgs) isWildcard() bool   { return isWildcardDomain(args.domain) }',
+        '\tchallengeType acmeChallengeType   // challenge type to fulfill\n'
+        '\tdiagnostic    bool                // true only for PocketRisu explicit cert2 verification\n'
+        '}\n\n'
+        'func (args acmeCertIssueArgs) baseDomain() string { return strings.TrimPrefix(args.domain, "*.") }\n'
+        'func (args acmeCertIssueArgs) isWildcard() bool   { return isWildcardDomain(args.domain) }\n\n'
+        'func cert2DiagnosticLog(logf logger.Logf, enabled bool, event string) {\n'
+        '\tif enabled {\n'
+        '\t\tlogf("pocketrisu-cert-stage: " + event)\n'
+        '\t}\n'
+        '}',
+        'diagnostic helper')
+
+    text = replace_once(text,
+        '\torder, err := ac.AuthorizeOrder(ctx, authzIDs, args.opts...)\n'
+        '\tif err != nil {\n\t\treturn nil, err\n\t}',
+        '\tcert2DiagnosticLog(args.logf, args.diagnostic, "order start")\n'
+        '\torder, err := ac.AuthorizeOrder(ctx, authzIDs, args.opts...)\n'
+        '\tif err != nil {\n'
+        '\t\tcert2DiagnosticLog(args.logf, args.diagnostic, "order error")\n'
+        '\t\treturn nil, err\n\t}\n'
+        '\tcert2DiagnosticLog(args.logf, args.diagnostic, "order done")',
+        'order stage')
+
+    text = replace_once(text,
+        '\t\tcase acmeChallengeDNS01:\n'
+        '\t\t\tif err := fulfillACMEDNS01Challenge(ctx, b, ac, az, args.logf, args.traceACME); err != nil {\n'
+        '\t\t\t\treturn nil, err\n'
+        '\t\t\t}',
+        '\t\tcase acmeChallengeDNS01:\n'
+        '\t\t\tcert2DiagnosticLog(args.logf, args.diagnostic, "dns start")\n'
+        '\t\t\tif err := fulfillACMEDNS01Challenge(ctx, b, ac, az, args.logf, args.traceACME); err != nil {\n'
+        '\t\t\t\tcert2DiagnosticLog(args.logf, args.diagnostic, "dns error")\n'
+        '\t\t\t\treturn nil, err\n'
+        '\t\t\t}\n'
+        '\t\t\tcert2DiagnosticLog(args.logf, args.diagnostic, "dns done")',
+        'dns stage')
+
+    text = replace_once(text,
+        '\torderURI := order.URI\n'
+        '\torder, err = ac.WaitOrder(ctx, orderURI)\n'
+        '\tif err != nil {\n'
+        '\t\tif ctx.Err() != nil {\n\t\t\treturn nil, ctx.Err()\n\t\t}\n'
+        '\t\tif oe, ok := err.(*xacme.OrderError); ok {\n'
+        '\t\t\targs.logf("acme: WaitOrder: OrderError status %q", oe.Status)\n'
+        '\t\t} else {\n'
+        '\t\t\targs.logf("acme: WaitOrder error: %v", err)\n'
+        '\t\t}\n'
+        '\t\treturn nil, err\n'
+        '\t}\n'
+        '\targs.traceACME(order)',
+        '\torderURI := order.URI\n'
+        '\tcert2DiagnosticLog(args.logf, args.diagnostic, "issuance-wait start")\n'
+        '\torder, err = ac.WaitOrder(ctx, orderURI)\n'
+        '\tif err != nil {\n'
+        '\t\tcert2DiagnosticLog(args.logf, args.diagnostic, "issuance-wait error")\n'
+        '\t\tif ctx.Err() != nil {\n\t\t\treturn nil, ctx.Err()\n\t\t}\n'
+        '\t\tif oe, ok := err.(*xacme.OrderError); ok {\n'
+        '\t\t\targs.logf("acme: WaitOrder: OrderError status %q", oe.Status)\n'
+        '\t\t} else {\n'
+        '\t\t\targs.logf("acme: WaitOrder error: %v", err)\n'
+        '\t\t}\n'
+        '\t\treturn nil, err\n'
+        '\t}\n'
+        '\tcert2DiagnosticLog(args.logf, args.diagnostic, "issuance-wait done")\n'
+        '\targs.traceACME(order)',
+        'issuance wait stage')
+
+    text = replace_once(text,
+        '\targs.logf("requesting cert...")\n'
+        '\targs.traceACME(csr)\n'
         '\tder, _, err := ac.CreateOrderCert(ctx, order.FinalizeURL, csr, true)\n'
         '\tif err != nil {\n\t\treturn nil, fmt.Errorf("CreateOrder: %v", err)\n\t}\n'
         '\targs.logf("got cert")',
-        '\targs.logf("pocketrisu-cert-stage: certificate start")\n'
-        '\targs.logf("requesting cert...")\n\targs.traceACME(csr)\n'
+        '\tcert2DiagnosticLog(args.logf, args.diagnostic, "certificate start")\n'
+        '\targs.logf("requesting cert...")\n'
+        '\targs.traceACME(csr)\n'
         '\tder, _, err := ac.CreateOrderCert(ctx, order.FinalizeURL, csr, true)\n'
-        '\tif err != nil {\n\t\targs.logf("pocketrisu-cert-stage: certificate error")\n'
+        '\tif err != nil {\n'
+        '\t\tcert2DiagnosticLog(args.logf, args.diagnostic, "certificate error")\n'
         '\t\treturn nil, fmt.Errorf("CreateOrder: %v", err)\n\t}\n'
-        '\targs.logf("pocketrisu-cert-stage: certificate done")\n\targs.logf("got cert")',
+        '\tcert2DiagnosticLog(args.logf, args.diagnostic, "certificate done")\n'
+        '\targs.logf("got cert")',
         'certificate stage')
     return text.encode('utf-8')
 
