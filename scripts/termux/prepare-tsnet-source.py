@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore pinned cert1 source, then apply exact cert3 diagnostic-only ACME/control markers."""
+"""Restore pinned cert1 source, then apply exact cert4 diagnostic-only ACME/control/Noise markers."""
 from pathlib import Path, PurePosixPath
 import hashlib
 import json
@@ -294,6 +294,145 @@ def add_cert3_control_substages(raw):
     return text.encode('utf-8')
 
 
+def add_cert4_controlhttp_substages(raw):
+    text = raw.decode('utf-8')
+    text = replace_once(text,
+        '\t"net/url"\n\t"runtime"\n',
+        '\t"net/url"\n\t"os"\n\t"runtime"\n',
+        'cert4 controlhttp os import')
+
+    text = replace_once(text,
+        'func (a *Dialer) logf(format string, args ...any) {\n'
+        '\tif a.Logf != nil {\n'
+        '\t\ta.Logf(format, args...)\n'
+        '\t}\n'
+        '}\n',
+        'func (a *Dialer) logf(format string, args ...any) {\n'
+        '\tif a.Logf != nil {\n'
+        '\t\ta.Logf(format, args...)\n'
+        '\t}\n'
+        '}\n\n'
+        'func (a *Dialer) cert4Diagnostic(event string) {\n'
+        '\tif os.Getenv("POCKETRISU_CERT4_DIAGNOSTICS") == "1" {\n'
+        '\t\ta.logf("pocketrisu-cert-stage: " + event)\n'
+        '\t}\n'
+        '}\n',
+        'cert4 controlhttp helper')
+
+    text = replace_once(text,
+        '\ttry := func(u *url.URL) {\n'
+        '\t\tif debugNoiseDial() {\n'
+        '\t\t\ta.logf("trying noise dial (%v, %v) ...", u, cmp.Or(optACEHost, optAddr.String()))\n'
+        '\t\t}\n'
+        '\t\tcbConn, err := a.dialURL(ctx, u, optAddr, optACEHost)\n'
+        '\t\tif debugNoiseDial() {\n'
+        '\t\t\ta.logf("noise dial (%v, %v) = (%v, %v)", u, cmp.Or(optACEHost, optAddr.String()), cbConn, err)\n'
+        '\t\t}\n',
+        '\ttry := func(u *url.URL) {\n'
+        '\t\tstage := "noise-dial-80"\n'
+        '\t\tif u.Scheme == "https" {\n'
+        '\t\t\tstage = "noise-dial-443"\n'
+        '\t\t}\n'
+        '\t\ta.cert4Diagnostic(stage + " start")\n'
+        '\t\tif debugNoiseDial() {\n'
+        '\t\t\ta.logf("trying noise dial (%v, %v) ...", u, cmp.Or(optACEHost, optAddr.String()))\n'
+        '\t\t}\n'
+        '\t\tcbConn, err := a.dialURL(ctx, u, optAddr, optACEHost)\n'
+        '\t\tif err != nil {\n'
+        '\t\t\ta.cert4Diagnostic(stage + " error")\n'
+        '\t\t} else {\n'
+        '\t\t\ta.cert4Diagnostic(stage + " done")\n'
+        '\t\t}\n'
+        '\t\tif debugNoiseDial() {\n'
+        '\t\t\ta.logf("noise dial (%v, %v) = (%v, %v)", u, cmp.Or(optACEHost, optAddr.String()), cbConn, err)\n'
+        '\t\t}\n',
+        'cert4 dial attempts')
+
+    text = replace_once(text,
+        'func (a *Dialer) dialURL(ctx context.Context, u *url.URL, optAddr netip.Addr, optACEHost string) (*ClientConn, error) {\n'
+        '\tinit, cont, err := controlbase.ClientDeferred(a.MachineKey, a.ControlKey, a.ProtocolVersion)\n'
+        '\tif err != nil {\n'
+        '\t\treturn nil, err\n'
+        '\t}\n'
+        '\tnetConn, err := a.tryURLUpgrade(ctx, u, optAddr, optACEHost, init)\n'
+        '\tif err != nil {\n'
+        '\t\treturn nil, err\n'
+        '\t}\n'
+        '\tcbConn, err := cont(ctx, netConn)\n'
+        '\tif err != nil {\n'
+        '\t\tnetConn.Close()\n'
+        '\t\treturn nil, err\n'
+        '\t}\n',
+        'func (a *Dialer) dialURL(ctx context.Context, u *url.URL, optAddr netip.Addr, optACEHost string) (*ClientConn, error) {\n'
+        '\tsuffix := "80"\n'
+        '\tif u.Scheme == "https" {\n'
+        '\t\tsuffix = "443"\n'
+        '\t}\n'
+        '\tinit, cont, err := controlbase.ClientDeferred(a.MachineKey, a.ControlKey, a.ProtocolVersion)\n'
+        '\tif err != nil {\n'
+        '\t\treturn nil, err\n'
+        '\t}\n'
+        '\ta.cert4Diagnostic("noise-upgrade-" + suffix + " start")\n'
+        '\tnetConn, err := a.tryURLUpgrade(ctx, u, optAddr, optACEHost, init)\n'
+        '\tif err != nil {\n'
+        '\t\ta.cert4Diagnostic("noise-upgrade-" + suffix + " error")\n'
+        '\t\treturn nil, err\n'
+        '\t}\n'
+        '\ta.cert4Diagnostic("noise-upgrade-" + suffix + " done")\n'
+        '\ta.cert4Diagnostic("noise-handshake-" + suffix + " start")\n'
+        '\tcbConn, err := cont(ctx, netConn)\n'
+        '\tif err != nil {\n'
+        '\t\ta.cert4Diagnostic("noise-handshake-" + suffix + " error")\n'
+        '\t\tnetConn.Close()\n'
+        '\t\treturn nil, err\n'
+        '\t}\n'
+        '\ta.cert4Diagnostic("noise-handshake-" + suffix + " done")\n',
+        'cert4 upgrade and handshake')
+    return text.encode('utf-8')
+
+
+def add_cert4_ts2021_substages(raw):
+    text = raw.decode('utf-8')
+    text = replace_once(text,
+        '\t"net/url"\n\t"sync"\n',
+        '\t"net/url"\n\t"os"\n\t"sync"\n',
+        'cert4 ts2021 os import')
+
+    text = replace_once(text,
+        'func (nc *Client) DoWithBody(ctx context.Context, method, path string, nodeKey key.NodePublic, body any) (*http.Response, error) {\n'
+        '\tjbody, err := json.Marshal(body)\n',
+        'func (nc *Client) cert4Diagnostic(event string) {\n'
+        '\tif os.Getenv("POCKETRISU_CERT4_DIAGNOSTICS") == "1" {\n'
+        '\t\tnc.logf("pocketrisu-cert-stage: " + event)\n'
+        '\t}\n'
+        '}\n\n'
+        'func (nc *Client) DoWithBody(ctx context.Context, method, path string, nodeKey key.NodePublic, body any) (*http.Response, error) {\n'
+        '\tjbody, err := json.Marshal(body)\n',
+        'cert4 ts2021 helper')
+
+    text = replace_once(text,
+        '\tAddLBHeader(req, nodeKey)\n'
+        '\treq.Header.Set("Content-Type", "application/json")\n'
+        '\treturn nc.Do(req)\n'
+        '}\n',
+        '\tAddLBHeader(req, nodeKey)\n'
+        '\treq.Header.Set("Content-Type", "application/json")\n'
+        '\tif path == "/machine/set-dns" {\n'
+        '\t\tnc.cert4Diagnostic("noise-h2-request start")\n'
+        '\t\tres, err := nc.Do(req)\n'
+        '\t\tif err != nil {\n'
+        '\t\t\tnc.cert4Diagnostic("noise-h2-request error")\n'
+        '\t\t} else {\n'
+        '\t\t\tnc.cert4Diagnostic("noise-h2-request done")\n'
+        '\t\t}\n'
+        '\t\treturn res, err\n'
+        '\t}\n'
+        '\treturn nc.Do(req)\n'
+        '}\n',
+        'cert4 h2 set-dns request')
+    return text.encode('utf-8')
+
+
 for parent in (source, source / 'third_party', target):
     assert not parent.is_symlink(), 'Source directory links are not supported'
 record = json.loads((source / 'SOURCE.json').read_text(encoding='utf-8'))
@@ -317,10 +456,18 @@ with tarfile.open(archive, 'r:gz') as tar:
 expected = dict(baseline)
 cert_file = target / 'feature/acme/cert.go'
 control_file = target / 'control/controlclient/direct.go'
+controlhttp_file = target / 'control/controlhttp/client.go'
+ts2021_file = target / 'control/ts2021/client.go'
 assert cert_file in expected, 'Pinned ACME source missing'
 assert control_file in expected, 'Pinned control client source missing'
+assert controlhttp_file in expected, 'Pinned control HTTP source missing'
+assert ts2021_file in expected, 'Pinned ts2021 source missing'
 expected[cert_file] = add_cert3_acme_substages(add_cert2_acme_markers(expected[cert_file]))
-expected[control_file] = add_cert3_control_substages(expected[control_file])
+control_source = add_cert3_control_substages(expected[control_file])
+control_source = control_source.replace(b'POCKETRISU_CERT3_DIAGNOSTICS', b'POCKETRISU_CERT4_DIAGNOSTICS')
+expected[control_file] = control_source
+expected[controlhttp_file] = add_cert4_controlhttp_substages(expected[controlhttp_file])
+expected[ts2021_file] = add_cert4_ts2021_substages(expected[ts2021_file])
 
 if target.exists():
     actual_files = {path for path in target.rglob('*') if path.is_file()}
@@ -343,12 +490,18 @@ assert (target / 'VERSION.txt').read_text().strip() == record['tailscale']
 assert 'tailscale.com v' + record['tailscale'] in (source / 'go.mod').read_text()
 cert_bytes = cert_file.read_bytes()
 control_bytes = control_file.read_bytes()
+controlhttp_bytes = controlhttp_file.read_bytes()
+ts2021_bytes = ts2021_file.read_bytes()
 assert b'pocketrisu-cert-stage: ' in cert_bytes
 assert b'cert3DiagnosticLog(args.logf, args.diagnostic, "certificate done")' in cert_bytes
 assert b'cert3DiagnosticLog(logf, diagnostic, "dns-lookup start")' in cert_bytes
 assert b'cert3DiagnosticLog(logf, diagnostic, "set-dns start")' in cert_bytes
 assert b'cert3DiagnosticLog(logf, diagnostic, "acme-accept start")' in cert_bytes
+assert b'POCKETRISU_CERT4_DIAGNOSTICS' in control_bytes
 assert b'cert3ControlDiagnosticLog(c.logf, "noise-key start")' in control_bytes
 assert b'cert3ControlDiagnosticLog(c.logf, "set-dns-post start")' in control_bytes
-assert b'cert3ControlDiagnosticLog(c.logf, "set-dns-response start")' in control_bytes
-print('Pinned cert1 source restored and exact cert3 diagnostic markers are present; unknown edits were not overwritten')
+assert b'cert4Diagnostic("noise-upgrade-" + suffix + " start")' in controlhttp_bytes
+assert b'cert4Diagnostic("noise-handshake-" + suffix + " start")' in controlhttp_bytes
+assert b'noise-dial-443' in controlhttp_bytes
+assert b'cert4Diagnostic("noise-h2-request start")' in ts2021_bytes
+print('Pinned cert1 source restored and exact cert4 diagnostic markers are present; unknown edits were not overwritten')
