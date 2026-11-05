@@ -13,7 +13,7 @@ VENDOR = SOURCE / "third_party/tailscale"
 def build_flags():
     candidate = json.loads((SOURCE / "CANDIDATE.json").read_text(encoding="utf-8"))
     if (candidate.get("candidate"), candidate.get("tailscaleVersion"), candidate.get("goVersion")) != (
-        "tsnet-v1.104.5-cert4", "1.104.5", "1.27.3"
+        "tsnet-v1.104.5-cert5", "1.104.5", "1.27.3"
     ):
         raise ValueError("unexpected candidate configuration")
     if not VENDOR.is_dir() or VENDOR.is_symlink() or VENDOR.parent.is_symlink():
@@ -39,7 +39,7 @@ def build_flags():
     # Canonical UTF-8 JSON object: sorted relative paths, no extra spaces or newline.
     encoded = json.dumps(inputs, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     source_id = hashlib.sha256(encoded).hexdigest()
-    long_version = "1.104.5-pocketrisu-exp-cert4-s" + source_id[:12]
+    long_version = "1.104.5-pocketrisu-exp-cert5-s" + source_id[:12]
     flags = ("-s -w -X tailscale.com/version.shortStamp=1.104.5 "
              "-X tailscale.com/version.longStamp=" + long_version + " -X main.buildSourceID=" + source_id)
     return {"identity": {"candidate": candidate["candidate"], "baseVersion": candidate["tailscaleVersion"],
