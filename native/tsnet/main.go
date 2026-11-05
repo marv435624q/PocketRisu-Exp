@@ -42,6 +42,7 @@ type snapshot struct {
 	Health         []string `json:"health,omitempty"`
 	LogoutComplete bool     `json:"logoutComplete,omitempty"`
 	ProxyPort      int      `json:"proxyPort,omitempty"`
+	HTTPSStage     string   `json:"httpsStage,omitempty"`
 }
 
 func boolValue(v bool) *bool { return &v }
@@ -199,6 +200,7 @@ func run() error {
 	loginRequested := false
 	var retryTLS time.Time
 	lastError := ""
+	lastHTTPSStage := ""
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 	for {
@@ -245,12 +247,15 @@ func run() error {
 				if httpServer == nil && !time.Now().Before(retryTLS) {
 					retryTLS = time.Now().Add(30 * time.Second)
 					if st.CurrentTailnet == nil || !st.CurrentTailnet.MagicDNSEnabled || len(st.CertDomains) == 0 {
+						lastHTTPSStage = "prerequisites"
 						lastError = "Enable MagicDNS and HTTPS certificates in the Tailnet DNS settings"
 					} else {
 						domain := strings.TrimSuffix(st.CertDomains[0], ".")
 						ln, listenErr := obtainHTTPSListener(ctx, domain, lc.CertPair, srv.ListenTLS)
+						lastHTTPSStage = httpsPreparationStage(listenErr)
 						lastError = safeError(listenErr)
 						if listenErr == nil {
+							lastHTTPSStage = ""
 							target, _ := url.Parse("http://127.0.0.1:6001")
 							httpServer = &http.Server{Handler: newProxy(target), ReadHeaderTimeout: 15 * time.Second,
 								IdleTimeout: 90 * time.Second, ErrorLog: log.New(io.Discard, "", 0)}
@@ -281,6 +286,7 @@ func run() error {
 				} else {
 					s.Status = "https-error"
 					s.Error = lastError
+					s.HTTPSStage = lastHTTPSStage
 					if options.verifyHTTPS {
 						emit(s)
 						return errors.New("HTTPS certificate or listener verification failed")

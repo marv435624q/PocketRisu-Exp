@@ -16,10 +16,14 @@ class VerifierContractTests(unittest.TestCase):
     def test_status_keeps_only_allowed_fields(self):
         private = 'private-value-sentinel'
         row = verifier.sanitized_status({'status': 'https-error', 'backendState': 'Running', 'registered': True,
-            'error': 'SetDNS ' + private + ': zero serverNoiseKey', 'authUrl': private, 'url': private,
-            'nodeKey': private, 'email': private, 'ip': private})
-        self.assertEqual(row, {'status': 'https-error', 'backendState': 'Running', 'registered': True, 'errorCode': 'zero-noise-key'})
+            'httpsStage': 'certificate', 'error': 'SetDNS ' + private + ': zero serverNoiseKey',
+            'authUrl': private, 'url': private, 'nodeKey': private, 'email': private, 'ip': private})
+        self.assertEqual(row, {'status': 'https-error', 'backendState': 'Running', 'registered': True,
+                               'httpsStage': 'certificate', 'errorCode': 'zero-noise-key'})
         self.assertNotIn(private, json.dumps(row))
+        rejected_stage = verifier.sanitized_status({'status': 'https-error', 'backendState': 'Running',
+                                                    'registered': True, 'httpsStage': private})
+        self.assertNotIn('httpsStage', rejected_stage)
         self.assertIsNone(verifier.sanitized_status({'status': private}))
 
     def test_https_requires_trust_and_successful_http(self):

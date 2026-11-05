@@ -11,6 +11,22 @@ import (
 
 var errRegistrationRequired = errors.New("existing Tailscale registration required; interactive login disabled")
 
+type httpsPreparationError struct {
+	Stage string
+	Err   error
+}
+
+func (e *httpsPreparationError) Error() string { return e.Err.Error() }
+func (e *httpsPreparationError) Unwrap() error { return e.Err }
+
+func httpsPreparationStage(err error) string {
+	var prep *httpsPreparationError
+	if errors.As(err, &prep) {
+		return prep.Stage
+	}
+	return ""
+}
+
 func clearInheritedTailscaleAuth(requireExisting bool) {
 	// Preserve ordinary APK startup's existing environment contract.
 	names := []string{"TS_AUTHKEY", "TS_CLIENT_SECRET", "TS_CONTROL_URL"}
@@ -49,10 +65,14 @@ func obtainHTTPSListener(ctx context.Context, domain string,
 	_, _, err := certPair(certCtx, domain)
 	finish()
 	if err != nil {
-		return nil, err
+		return nil, &httpsPreparationError{Stage: "certificate", Err: err}
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, &httpsPreparationError{Stage: "post-certificate", Err: err}
 	}
-	return listenTLS("tcp", ":443")
+	ln, err := listenTLS("tcp", ":443")
+	if err != nil {
+		return nil, &httpsPreparationError{Stage: "listener", Err: err}
+	}
+	return ln, nil
 }

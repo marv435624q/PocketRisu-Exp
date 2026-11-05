@@ -24,6 +24,9 @@ func TestHTTPSCertificateFailureNeverCreatesListener(t *testing.T) {
 			if !errors.Is(err, want) || ln != nil || called {
 				t.Fatalf("certificate error not propagated before listener: err=%v, listener=%v, called=%v", err, ln, called)
 			}
+			if got := httpsPreparationStage(err); got != "certificate" {
+				t.Fatalf("certificate failure stage=%q", got)
+			}
 		})
 	}
 }
@@ -41,6 +44,9 @@ func TestHTTPSListenerFailureAndCancellation(t *testing.T) {
 	if ln != nil || !errors.Is(err, want) {
 		t.Fatal("listener error hidden")
 	}
+	if got := httpsPreparationStage(err); got != "listener" {
+		t.Fatalf("listener failure stage=%q", got)
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	called := false
 	ln, err = obtainHTTPSListener(ctx, "synthetic.invalid",
@@ -48,6 +54,9 @@ func TestHTTPSListenerFailureAndCancellation(t *testing.T) {
 		func(string, string) (net.Listener, error) { called = true; return nil, nil })
 	if ln != nil || !errors.Is(err, context.Canceled) || called {
 		t.Fatal("listener started after stop")
+	}
+	if got := httpsPreparationStage(err); got != "post-certificate" {
+		t.Fatalf("post-certificate cancellation stage=%q", got)
 	}
 }
 
