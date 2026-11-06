@@ -125,9 +125,9 @@ func run() error {
 	// Authentication is always interactive; don't inherit keys from host shells.
 	clearInheritedTailscaleAuth(options.requireRegistered)
 	_ = os.Setenv("TS_NO_LOGS_NO_SUPPORT", "true")
-	_ = os.Unsetenv("POCKETRISU_CERT5_DIAGNOSTICS")
+	_ = os.Unsetenv("POCKETRISU_CERT6_DIAGNOSTICS")
 	if options.verifyHTTPS {
-		_ = os.Setenv("POCKETRISU_CERT5_DIAGNOSTICS", "1")
+		_ = os.Setenv("POCKETRISU_CERT6_DIAGNOSTICS", "1")
 	}
 	serverLogf := func(string, ...any) {}
 	var certTracker *certProgressTracker
