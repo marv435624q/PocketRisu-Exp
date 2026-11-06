@@ -31,6 +31,29 @@ func TestHTTPSCertificateFailureNeverCreatesListener(t *testing.T) {
 	}
 }
 
+func TestHTTPSCertificateUsesCallerContextWithoutLocalDeadline(t *testing.T) {
+	certCalled := false
+	listenerCalled := false
+	ln, err := obtainHTTPSListener(context.Background(), "synthetic.invalid",
+		func(ctx context.Context, _ string) ([]byte, []byte, error) {
+			certCalled = true
+			if _, hasDeadline := ctx.Deadline(); hasDeadline {
+				t.Fatal("certificate context gained an unexpected local deadline")
+			}
+			return nil, nil, nil
+		},
+		func(network, address string) (net.Listener, error) {
+			listenerCalled = true
+			if network != "tcp" || address != ":443" {
+				t.Fatal("Tailnet HTTPS endpoint changed")
+			}
+			return nil, errors.New("synthetic listener failure")
+		})
+	if ln != nil || err == nil || !certCalled || !listenerCalled {
+		t.Fatalf("caller context was not preserved: listener=%v err=%v certCalled=%v listenerCalled=%v", ln, err, certCalled, listenerCalled)
+	}
+}
+
 func TestHTTPSListenerFailureAndCancellation(t *testing.T) {
 	want := errors.New("synthetic listener failure")
 	cert := func(context.Context, string) ([]byte, []byte, error) { return nil, nil, nil }
