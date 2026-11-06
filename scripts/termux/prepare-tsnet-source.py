@@ -493,8 +493,8 @@ def add_cert5_fresh_setdns(raw):
 def add_cert6_control_trace(raw):
     text = raw.decode('utf-8')
     text = replace_once(text,
-        '\t"net/http"\n\t"net/http/httputil"\n',
-        '\t"net/http"\n\t"net/http/httptrace"\n\t"net/http/httputil"\n',
+        '\t"net/http"\n\t"net/netip"\n',
+        '\t"net/http"\n\t"net/http/httptrace"\n\t"net/netip"\n',
         'cert6 control httptrace import')
 
     text = replace_once(text,
