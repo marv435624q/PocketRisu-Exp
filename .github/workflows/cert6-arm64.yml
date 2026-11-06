@@ -1,4 +1,4 @@
-# One-shot diagnostic branch build; unrelated branch pushes do not trigger it.
+# One-shot cert6 H2 trace build; unrelated branch pushes do not trigger it.
 name: cert6 ARM64 diagnostic candidate
 
 on:
