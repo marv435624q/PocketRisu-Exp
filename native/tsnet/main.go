@@ -127,7 +127,7 @@ func run() error {
 	_ = os.Setenv("TS_NO_LOGS_NO_SUPPORT", "true")
 	_ = os.Unsetenv("POCKETRISU_CERT5_DIAGNOSTICS")
 	if options.verifyHTTPS {
-		_ = os.Setenv("POCKETRISU_CERT4_DIAGNOSTICS", "1")
+		_ = os.Setenv("POCKETRISU_CERT5_DIAGNOSTICS", "1")
 	}
 	serverLogf := func(string, ...any) {}
 	var certTracker *certProgressTracker
