@@ -38,9 +38,9 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/termux/prepare-tsnet-source.py
-          grep -q 'Unsetenv("POCKETRISU_CERT5_DIAGNOSTICS")' native/tsnet/main.go
-          grep -q 'Setenv("POCKETRISU_CERT5_DIAGNOSTICS", "1")' native/tsnet/main.go
-          ! grep -q 'Setenv("POCKETRISU_CERT4_DIAGNOSTICS", "1")' native/tsnet/main.go
+          grep -q 'Unsetenv("POCKETRISU_CERT6_DIAGNOSTICS")' native/tsnet/main.go
+          grep -q 'Setenv("POCKETRISU_CERT6_DIAGNOSTICS", "1")' native/tsnet/main.go
+          ! grep -q 'Setenv("POCKETRISU_CERT5_DIAGNOSTICS", "1")' native/tsnet/main.go
 
       - name: Verify modules and Go tests
         shell: bash
