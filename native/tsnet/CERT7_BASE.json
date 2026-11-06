@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "candidate": "tsnet-v1.104.5-cert7",
+  "baseCandidate": "tsnet-v1.104.5-cert4",
+  "baseCommit": "6fa8d236b1b28773a456527186b3b6784c47c57c",
+  "change": "Remove PocketRisu's 30-second certificate issuance wrapper and pass the caller context directly to CertPairWithValidity.",
+  "retained": [
+    "cert4 ACME/control/Noise diagnostics",
+    "cert1 server Noise key readiness fix"
+  ],
+  "excluded": [
+    "cert5 fresh Noise client experiment",
+    "cert6 whoami/httptrace experiment"
+  ],
+  "regressionGuard": "https_test.go fails if obtainHTTPSListener adds a local deadline to a deadline-free caller context."
+}
