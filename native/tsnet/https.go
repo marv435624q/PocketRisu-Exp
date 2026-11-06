@@ -6,7 +6,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"time"
 )
 
 var errRegistrationRequired = errors.New("existing Tailscale registration required; interactive login disabled")
@@ -55,15 +54,14 @@ func allowInteractiveLogin(requireRegistered bool) error {
 	return nil
 }
 
-// A certificate must succeed before a Tailnet HTTPS listener is created. The
-// existing timeout is retained; server Noise key readiness is fixed in the
-// control client, not by waiting longer or ignoring certificate errors here.
+// A certificate must succeed before a Tailnet HTTPS listener is created.
+// Certificate issuance uses the caller's context directly. ACME DNS-01 can
+// legitimately take longer than 30 seconds, so this layer must not impose a
+// shorter deadline than its caller.
 func obtainHTTPSListener(ctx context.Context, domain string,
 	certPair func(context.Context, string) ([]byte, []byte, error),
 	listenTLS func(string, string) (net.Listener, error)) (net.Listener, error) {
-	certCtx, finish := context.WithTimeout(ctx, 30*time.Second)
-	_, _, err := certPair(certCtx, domain)
-	finish()
+	_, _, err := certPair(ctx, domain)
 	if err != nil {
 		return nil, &httpsPreparationError{Stage: "certificate", Err: err}
 	}
