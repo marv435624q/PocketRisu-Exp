@@ -1,0 +1,177 @@
+# One-shot diagnostic branch build; unrelated branch pushes do not trigger it.
+name: cert6 ARM64 diagnostic candidate
+
+on:
+  push:
+    branches:
+      - fix/termux-tsnet-cert6-h2-trace-20261106
+    paths:
+      - '.github/workflows/cert6-arm64.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-cert6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout diagnostic branch
+        uses: actions/checkout@v6
+
+      - name: Set up pinned Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.27.3'
+          cache: false
+
+      - name: Confirm toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          go version
+          test "$(go env GOVERSION)" = "go1.27.3"
+          python3 --version
+
+      - name: Restore pinned cert1 source and apply cert6 diagnostics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/termux/prepare-tsnet-source.py
+          grep -q 'Unsetenv("POCKETRISU_CERT5_DIAGNOSTICS")' native/tsnet/main.go
+          grep -q 'Setenv("POCKETRISU_CERT5_DIAGNOSTICS", "1")' native/tsnet/main.go
+          ! grep -q 'Setenv("POCKETRISU_CERT4_DIAGNOSTICS", "1")' native/tsnet/main.go
+
+      - name: Verify modules and Go tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          export POCKETRISU_TSNET_TEST_DIR="$RUNNER_TEMP/pocketrisu-tsnet-tests"
+          mkdir -p "$POCKETRISU_TSNET_TEST_DIR"
+          cd native/tsnet
+          GOTOOLCHAIN=local GOWORK=off go mod verify
+          GOTOOLCHAIN=local GOWORK=off go test -race ./...
+
+      - name: Run cert6 verifier unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/termux/test_verify_tsnet_cert6.py
+
+      - name: Build Android ARM64 diagnostic candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/termux/build-tsnet-candidate.sh
+
+      - name: Package candidate and provenance
+        shell: bash
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+          ACTIONS_RUN_ID: ${{ github.run_id }}
+          ACTIONS_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          set -euo pipefail
+          OUT="$(find native/tsnet/output -mindepth 1 -maxdepth 1 -type d -name 'tsnet-v1.104.5-cert6-*' | head -n 1)"
+          test -n "$OUT"
+          BIN="$OUT/libpocketrisu_tsnet_exec.so"
+          test -s "$BIN"
+
+          PKG="artifact-root/prebuilt/termux/arm64/tsnet-v1.104.5-cert6"
+          mkdir -p "$PKG" artifact-root/scripts/termux
+          cp "$BIN" "$PKG/libpocketrisu_tsnet_exec.so"
+          cp "$OUT/buildinfo.txt" "$PKG/buildinfo.txt"
+          cp "$OUT/build-flags.json" "$PKG/build-flags.json"
+          cp "$OUT/build-flags-after.json" "$PKG/build-flags-after.json"
+          cp "$OUT/build.log" "$PKG/build.log"
+          cp scripts/termux/verify-tsnet-cert6.py artifact-root/scripts/termux/verify-tsnet-cert6.py
+
+          BIN_SHA="$(sha256sum "$BIN" | awk '{print $1}')"
+          BIN_BYTES="$(stat -c '%s' "$BIN")"
+          printf '%s  %s\n' "$BIN_SHA" "libpocketrisu_tsnet_exec.so" > "$PKG/SHA256SUMS"
+
+          python3 - "$PKG" "$BIN_SHA" "$BIN_BYTES" <<'PY'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          pkg = pathlib.Path(sys.argv[1])
+          digest = sys.argv[2]
+          size = int(sys.argv[3])
+          flags = json.loads((pkg / "build-flags.json").read_text(encoding="utf-8"))
+          candidate = json.loads(pathlib.Path("native/tsnet/CANDIDATE.json").read_text(encoding="utf-8"))
+          provenance = {
+              "schemaVersion": 1,
+              "candidate": candidate["candidate"],
+              "tailscale": candidate["tailscaleVersion"],
+              "go": candidate["goVersion"],
+              "binary": {
+                  "path": "prebuilt/termux/arm64/tsnet-v1.104.5-cert6/libpocketrisu_tsnet_exec.so",
+                  "bytes": size,
+                  "sha256": digest,
+              },
+              "identity": flags["identity"],
+              "sourceCommit": os.environ["SOURCE_COMMIT"],
+              "baseCandidate": candidate["baseCandidate"],
+              "baseCommit": candidate["baseCommit"],
+              "upstream": {
+                  "repository": candidate["upstreamRepository"],
+                  "commit": candidate["upstreamCommit"],
+              },
+              "verification": {
+                  "githubActionsRunId": os.environ["ACTIONS_RUN_ID"],
+                  "githubActionsRunAttempt": os.environ["ACTIONS_RUN_ATTEMPT"],
+                  "goModVerify": "passed",
+                  "goRaceTests": "passed",
+                  "cert6VerifierUnitTests": "passed",
+                  "androidArm64Built": True,
+                  "candidateExecutedOnAndroid": False,
+                  "realACMEOrHTTPS": False,
+              },
+          }
+          (pkg / "provenance.json").write_text(
+              json.dumps(provenance, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+          file "$BIN" | tee "$PKG/file.txt"
+          readelf -h "$BIN" > "$PKG/readelf-header.txt"
+          readelf -l "$BIN" > "$PKG/readelf-program-headers.txt"
+          grep -q 'AArch64' "$PKG/readelf-header.txt"
+          grep -q '/system/bin/linker64' "$PKG/readelf-program-headers.txt"
+          grep -q 'GOOS=android' "$PKG/buildinfo.txt"
+          grep -q 'GOARCH=arm64' "$PKG/buildinfo.txt"
+
+          python3 - <<'PY'
+          import json
+          import pathlib
+          import hashlib
+
+          pkg = pathlib.Path("artifact-root/prebuilt/termux/arm64/tsnet-v1.104.5-cert6")
+          meta = json.loads((pkg / "provenance.json").read_text(encoding="utf-8"))
+          binary = pkg / "libpocketrisu_tsnet_exec.so"
+          actual = hashlib.sha256(binary.read_bytes()).hexdigest()
+          assert actual == meta["binary"]["sha256"]
+          assert binary.stat().st_size == meta["binary"]["bytes"]
+          assert meta["identity"]["candidate"] == "tsnet-v1.104.5-cert6"
+          assert meta["identity"]["baseVersion"] == "1.104.5"
+          assert meta["identity"]["longVersion"] == "1.104.5-pocketrisu-exp-cert6-s" + meta["identity"]["sourceId"][:12]
+          print(json.dumps({
+              "candidate": meta["identity"]["candidate"],
+              "longVersion": meta["identity"]["longVersion"],
+              "sourceId": meta["identity"]["sourceId"],
+              "sha256": actual,
+              "bytes": binary.stat().st_size,
+          }, indent=2))
+          PY
+
+      - name: Upload cert6 ARM64 package
+        uses: actions/upload-artifact@v7
+        with:
+          name: tsnet-v1.104.5-cert6-arm64
+          path: artifact-root/
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 6
