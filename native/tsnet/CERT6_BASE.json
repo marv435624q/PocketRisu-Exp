@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "candidate": "tsnet-v1.104.5-cert6",
+  "baseCandidate": "tsnet-v1.104.5-cert5",
+  "baseCommit": "dc96dd6d8f45b4d7bfbb6f5d9fbf20f0d9239194",
+  "baseSourceRecord": "native/tsnet/SOURCE.json",
+  "experiment": {
+    "sequence": [
+      "fresh one-shot ts2021 client",
+      "GET /machine/whoami",
+      "POST /machine/set-dns"
+    ],
+    "traceMilestones": [
+      "got-conn",
+      "wrote-headers",
+      "wrote-request",
+      "first-response-byte"
+    ],
+    "responseBodiesLogged": false,
+    "statusCodesLogged": false
+  },
+  "diagnostics": {
+    "whoamiStages": [
+      "fresh-whoami",
+      "whoami-got-conn",
+      "whoami-wrote-headers",
+      "whoami-wrote-request",
+      "whoami-first-byte"
+    ],
+    "setDNSStages": [
+      "setdns-got-conn",
+      "setdns-wrote-headers",
+      "setdns-wrote-request",
+      "setdns-first-byte"
+    ],
+    "noiseTransportStages": [
+      "noise-dial-80",
+      "noise-dial-443",
+      "noise-upgrade-80",
+      "noise-upgrade-443",
+      "noise-handshake-80",
+      "noise-handshake-443",
+      "noise-h2-request"
+    ],
+    "verifyHTTPSMaxPreparationAttempts": 2
+  },
+  "privacy": "Only allowlisted stage/state/elapsed values are emitted; whoami and SetDNS bodies, status codes, host, IP, URL, domain, DNS TXT, keys, account and state contents are not emitted."
+}
