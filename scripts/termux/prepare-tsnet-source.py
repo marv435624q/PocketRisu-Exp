@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Restore pinned cert1 source, apply cert5 diagnostics, and isolate SetDNS on a fresh Noise client."""
+"""Restore pinned source, keep fresh SetDNS isolation, and trace cert6 HTTP/2 request milestones."""
 from pathlib import Path, PurePosixPath
 import hashlib
 import json
@@ -490,6 +490,118 @@ def add_cert5_fresh_setdns(raw):
     return text.encode('utf-8')
 
 
+def add_cert6_control_trace(raw):
+    text = raw.decode('utf-8')
+    text = replace_once(text,
+        '\t"net/http"\n\t"net/http/httputil"\n',
+        '\t"net/http"\n\t"net/http/httptrace"\n\t"net/http/httputil"\n',
+        'cert6 control httptrace import')
+
+    text = replace_once(text,
+        'func cert3ControlDiagnosticLog(logf logger.Logf, event string) {\n'
+        '\tif os.Getenv("POCKETRISU_CERT3_DIAGNOSTICS") == "1" {\n'
+        '\t\tlogf("pocketrisu-cert-stage: " + event)\n'
+        '\t}\n'
+        '}\n',
+        'func cert3ControlDiagnosticLog(logf logger.Logf, event string) {\n'
+        '\tif os.Getenv("POCKETRISU_CERT3_DIAGNOSTICS") == "1" {\n'
+        '\t\tlogf("pocketrisu-cert-stage: " + event)\n'
+        '\t}\n'
+        '}\n\n'
+        'func cert6TraceRequest(req *http.Request, logf logger.Logf, prefix string) *http.Request {\n'
+        '\ttrace := &httptrace.ClientTrace{\n'
+        '\t\tGotConn: func(httptrace.GotConnInfo) {\n'
+        '\t\t\tcert3ControlDiagnosticLog(logf, prefix+"-got-conn done")\n'
+        '\t\t},\n'
+        '\t\tWroteHeaders: func() {\n'
+        '\t\t\tcert3ControlDiagnosticLog(logf, prefix+"-wrote-headers done")\n'
+        '\t\t},\n'
+        '\t\tWroteRequest: func(info httptrace.WroteRequestInfo) {\n'
+        '\t\t\tstate := "done"\n'
+        '\t\t\tif info.Err != nil {\n'
+        '\t\t\t\tstate = "error"\n'
+        '\t\t\t}\n'
+        '\t\t\tcert3ControlDiagnosticLog(logf, prefix+"-wrote-request "+state)\n'
+        '\t\t},\n'
+        '\t\tGotFirstResponseByte: func() {\n'
+        '\t\t\tcert3ControlDiagnosticLog(logf, prefix+"-first-byte done")\n'
+        '\t\t},\n'
+        '\t}\n'
+        '\treturn req.WithContext(httptrace.WithClientTrace(req.Context(), trace))\n'
+        '}\n',
+        'cert6 whoami httptrace helper')
+
+    text = replace_once(text,
+        '\tcert3ControlDiagnosticLog(c.logf, "fresh-noise-client done")\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "set-dns-post start")\n',
+        '\tcert3ControlDiagnosticLog(c.logf, "fresh-noise-client done")\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "fresh-whoami start")\n'
+        '\twhoamiURL := fmt.Sprintf("%s/machine/whoami", c.serverURL)\n'
+        '\twhoamiURL = strings.Replace(whoamiURL, "http:", "https:", 1)\n'
+        '\twhoamiReq, err := http.NewRequestWithContext(ctx, "GET", whoamiURL, nil)\n'
+        '\tif err != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "fresh-whoami error")\n'
+        '\t\treturn err\n'
+        '\t}\n'
+        '\twhoamiReq = cert6TraceRequest(whoamiReq, c.logf, "whoami")\n'
+        '\twhoamiRes, err := nc.Do(whoamiReq)\n'
+        '\tif err != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "fresh-whoami error")\n'
+        '\t\treturn fmt.Errorf("fresh Noise whoami: %w", err)\n'
+        '\t}\n'
+        '\t_, readErr := io.Copy(io.Discard, whoamiRes.Body)\n'
+        '\tcloseErr := whoamiRes.Body.Close()\n'
+        '\tif readErr != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "fresh-whoami error")\n'
+        '\t\treturn fmt.Errorf("fresh Noise whoami body: %w", readErr)\n'
+        '\t}\n'
+        '\tif closeErr != nil {\n'
+        '\t\tcert3ControlDiagnosticLog(c.logf, "fresh-whoami error")\n'
+        '\t\treturn fmt.Errorf("fresh Noise whoami close: %w", closeErr)\n'
+        '\t}\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "fresh-whoami done")\n'
+        '\tcert3ControlDiagnosticLog(c.logf, "set-dns-post start")\n',
+        'cert6 fresh whoami probe')
+    return text.encode('utf-8')
+
+
+def add_cert6_ts2021_trace(raw):
+    text = raw.decode('utf-8')
+    text = replace_once(text,
+        '\t"net/http"\n\t"net/netip"\n',
+        '\t"net/http"\n\t"net/http/httptrace"\n\t"net/netip"\n',
+        'cert6 ts2021 httptrace import')
+
+    text = replace_once(text,
+        '\tif path == "/machine/set-dns" {\n'
+        '\t\tnc.cert4Diagnostic("noise-h2-request start")\n'
+        '\t\tres, err := nc.Do(req)\n',
+        '\tif path == "/machine/set-dns" {\n'
+        '\t\ttrace := &httptrace.ClientTrace{\n'
+        '\t\t\tGotConn: func(httptrace.GotConnInfo) {\n'
+        '\t\t\t\tnc.cert4Diagnostic("setdns-got-conn done")\n'
+        '\t\t\t},\n'
+        '\t\t\tWroteHeaders: func() {\n'
+        '\t\t\t\tnc.cert4Diagnostic("setdns-wrote-headers done")\n'
+        '\t\t\t},\n'
+        '\t\t\tWroteRequest: func(info httptrace.WroteRequestInfo) {\n'
+        '\t\t\t\tstate := "done"\n'
+        '\t\t\t\tif info.Err != nil {\n'
+        '\t\t\t\t\tstate = "error"\n'
+        '\t\t\t\t}\n'
+        '\t\t\t\tnc.cert4Diagnostic("setdns-wrote-request " + state)\n'
+        '\t\t\t},\n'
+        '\t\t\tGotFirstResponseByte: func() {\n'
+        '\t\t\t\tnc.cert4Diagnostic("setdns-first-byte done")\n'
+        '\t\t\t},\n'
+        '\t\t}\n'
+        '\t\treq = req.WithContext(httptrace.WithClientTrace(req.Context(), trace))\n'
+        '\t\tnc.cert4Diagnostic("noise-h2-request start")\n'
+        '\t\tres, err := nc.Do(req)\n',
+        'cert6 setdns httptrace')
+    return text.encode('utf-8')
+
+
 for parent in (source, source / 'third_party', target):
     assert not parent.is_symlink(), 'Source directory links are not supported'
 record = json.loads((source / 'SOURCE.json').read_text(encoding='utf-8'))
@@ -522,13 +634,15 @@ assert ts2021_file in expected, 'Pinned ts2021 source missing'
 expected[cert_file] = add_cert3_acme_substages(add_cert2_acme_markers(expected[cert_file]))
 control_source = add_cert3_control_substages(expected[control_file])
 control_source = add_cert5_fresh_setdns(control_source)
-control_source = control_source.replace(b'POCKETRISU_CERT3_DIAGNOSTICS', b'POCKETRISU_CERT5_DIAGNOSTICS')
+control_source = add_cert6_control_trace(control_source)
+control_source = control_source.replace(b'POCKETRISU_CERT3_DIAGNOSTICS', b'POCKETRISU_CERT6_DIAGNOSTICS')
 expected[control_file] = control_source
 controlhttp_source = add_cert4_controlhttp_substages(expected[controlhttp_file])
-controlhttp_source = controlhttp_source.replace(b'POCKETRISU_CERT4_DIAGNOSTICS', b'POCKETRISU_CERT5_DIAGNOSTICS')
+controlhttp_source = controlhttp_source.replace(b'POCKETRISU_CERT4_DIAGNOSTICS', b'POCKETRISU_CERT6_DIAGNOSTICS')
 expected[controlhttp_file] = controlhttp_source
 ts2021_source = add_cert4_ts2021_substages(expected[ts2021_file])
-ts2021_source = ts2021_source.replace(b'POCKETRISU_CERT4_DIAGNOSTICS', b'POCKETRISU_CERT5_DIAGNOSTICS')
+ts2021_source = add_cert6_ts2021_trace(ts2021_source)
+ts2021_source = ts2021_source.replace(b'POCKETRISU_CERT4_DIAGNOSTICS', b'POCKETRISU_CERT6_DIAGNOSTICS')
 expected[ts2021_file] = ts2021_source
 
 if target.exists():
@@ -559,16 +673,19 @@ assert b'cert3DiagnosticLog(args.logf, args.diagnostic, "certificate done")' in 
 assert b'cert3DiagnosticLog(logf, diagnostic, "dns-lookup start")' in cert_bytes
 assert b'cert3DiagnosticLog(logf, diagnostic, "set-dns start")' in cert_bytes
 assert b'cert3DiagnosticLog(logf, diagnostic, "acme-accept start")' in cert_bytes
-assert b'POCKETRISU_CERT5_DIAGNOSTICS' in control_bytes
+assert b'POCKETRISU_CERT6_DIAGNOSTICS' in control_bytes
 assert b'newOneShotNoiseClient' in control_bytes
 assert b'cert3ControlDiagnosticLog(c.logf, "fresh-noise-client start")' in control_bytes
+assert b'cert3ControlDiagnosticLog(c.logf, "fresh-whoami start")' in control_bytes
+assert b'cert6TraceRequest(whoamiReq, c.logf, "whoami")' in control_bytes
 assert b'defer nc.Close()' in control_bytes
 assert b'cert3ControlDiagnosticLog(c.logf, "noise-key start")' in control_bytes
 assert b'cert3ControlDiagnosticLog(c.logf, "set-dns-post start")' in control_bytes
-assert b'POCKETRISU_CERT5_DIAGNOSTICS' in controlhttp_bytes
+assert b'POCKETRISU_CERT6_DIAGNOSTICS' in controlhttp_bytes
 assert b'cert4Diagnostic("noise-upgrade-" + suffix + " start")' in controlhttp_bytes
 assert b'cert4Diagnostic("noise-handshake-" + suffix + " start")' in controlhttp_bytes
 assert b'noise-dial-443' in controlhttp_bytes
-assert b'POCKETRISU_CERT5_DIAGNOSTICS' in ts2021_bytes
+assert b'POCKETRISU_CERT6_DIAGNOSTICS' in ts2021_bytes
+assert b'cert4Diagnostic("setdns-wrote-request " + state)' in ts2021_bytes
 assert b'cert4Diagnostic("noise-h2-request start")' in ts2021_bytes
-print('Pinned cert1 source restored; cert5 fresh SetDNS Noise path and diagnostics are present; unknown edits were not overwritten')
+print('Pinned source restored; cert6 whoami/set-dns HTTP2 traces are present; unknown edits were not overwritten')
